@@ -12,6 +12,13 @@
 
 > **Your life (Personal & Work). Connected. Searchable. Remembered.**
 
+We save reels, DM ourselves links, and bookmark things we swear we'll come back to. We never do and when we actually need something, it's buried under hundreds of other saves across a dozen different apps, with no way to connect any of it. nibame is a unified context layer for your life: one place that captures everything across your personal world, work, learning, and people and brings the right thing back when it actually matters.
+
+<p align="center">
+  <img src="assets/nibame_philosophy.svg" alt="nibame core" width="280"/>
+</p>
+
+Sooo, 
 **nibame** is an open-source, privacy-first personal context engine designed to become your **second brain**.
 
 ## Before we begin this readme
