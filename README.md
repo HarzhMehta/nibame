@@ -1,7 +1,7 @@
 # nibame
 
 <p align="center">
-  <img src="assets/logo.png" alt="nibame logo" width="180"/>
+  <img src="assets/logo.png" alt="nibame logo" width="280"/>
 </p>
 
 <p align="center">
