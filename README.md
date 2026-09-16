@@ -19,10 +19,12 @@ We save reels, DM ourselves links, and bookmark things we swear we'll come back 
 </p>
 
 Sooo, 
-**nibame** is an open-source, privacy-first personal context engine designed to become your **second brain**.
+**nibame** is personal context engine (basically an organized database).
 
 ## Before we begin this readme
 My personal note - I'm Harsh Mehta, this readme was my memory dump that i shared with claude and it has converted into a structured format. Before you hop on to the AI generated things, I wanted to share some handwritten thoughts. 
+
+[ Note as of 16th sept - I dont mean for this proj to be some repo / github farming slop. I also dont intend for this to be some second brain bs. Its just an idea or gutt feeling i had or maybe an urge to have a project like this. I discussed this idea with some of my friends and they gave a lot of critical feedback on it which makes sense. The project does not have clear definitions yet and I (we) really need to handle this with extreme caution or this project will end up becoming another random productivity app that we download and dont use ] 
 
 My main wish is to have 4 main parts of this project working which we all can use in our lives. 
 
@@ -72,7 +74,7 @@ The name **nibame** comes from the Japanese word for "second".
 
 The idea is simple:
 
-> **nibame is the second brain that remembers, understands, and connects the things your real brain comes across every day.**
+> **nibame is the a database system that remembers, understands, and connects the things your real brain comes across every day.**
 
 Today, information about our lives is scattered across dozens of different places:
 
@@ -176,7 +178,7 @@ It could also connect that video to:
 * people in your network who work in this area
 * tasks related to learning the topic
 
-This connection between pieces of information is what makes nibame a **second brain**, rather than another bookmarking or note-taking app.
+This connection between pieces of information is what makes nibame a **unified layer**, rather than another bookmarking or note-taking app.
 
 ---
 
@@ -736,25 +738,13 @@ AI should help organize, summarize, connect, and retrieve information. The under
 
 Capturing something should take seconds.
 
-### 8. Privacy-first
-
-A second brain contains extremely personal information.
 
 Privacy and security therefore need to be architectural principles, not features added later.
 
-### 9. Open source
+### 8. Open source
 
-Users should be able to inspect the system, self-host it, and maintain control over their own data.
+Users should be able to inspect the system, self-host it, and maintain control over their own data. Anybody can freely use it, in a non commercial way.  (I dont even know if this project will finish as intended so commercial stuff is just some bs , as if somebody would use it as of sept 2026 lmao )
 
----
-
-# 16. Technical Product Definition
-
-> **nibame is an open-source, privacy-first Personal Context Engine that continuously captures information from a user's digital life, transforms it into a connected knowledge graph, and provides intelligent contextual retrieval across personal, professional, social, and learning domains.**
-
-In simpler terms:
-
-> **A second brain for everything you don't want to forget.**
 
 ---
 
