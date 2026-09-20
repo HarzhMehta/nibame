@@ -1,0 +1,265 @@
+{
+  "video_streaming": {
+    "label": "Video & Streaming",
+    "description": "Video platforms, livestreams, films, and television services.",
+    "color": "#ff5d72",
+    "domains": [
+      "youtube.com", "youtu.be", "vimeo.com", "dailymotion.com", "twitch.tv",
+      "netflix.com", "primevideo.com", "hotstar.com", "disneyplus.com", "hulu.com",
+      "max.com", "peacocktv.com", "jiocinema.com", "zee5.com", "sonyliv.com",
+      "crunchyroll.com", "tubitv.com", "bilibili.com", "rumble.com", "kick.com", "vevo.com"
+    ]
+  },
+  "development_code": {
+    "label": "Development & Code",
+    "description": "Repositories, package registries, coding tools, and developer communities.",
+    "color": "#72a7ff",
+    "domains": [
+      "github.com", "github.io", "gitlab.com", "bitbucket.org", "sourceforge.net",
+      "stackoverflow.com", "stackexchange.com", "npmjs.com", "pypi.org", "crates.io",
+      "rubygems.org", "packagist.org", "nuget.org", "mvnrepository.com", "hub.docker.com",
+      "docker.com", "codepen.io", "codesandbox.io", "replit.com", "glitch.com",
+      "leetcode.com", "hackerrank.com", "codeforces.com", "geeksforgeeks.org",
+      "freecodecamp.org", "devdocs.io", "readthedocs.io", "kaggle.com", "huggingface.co",
+      "replicate.com", "vercel.com", "netlify.com", "cloudflare.com"
+    ]
+  },
+  "articles_blogs": {
+    "label": "Articles & Blogs",
+    "description": "Long-form writing, newsletters, personal blogs, and publishing platforms.",
+    "color": "#ff9f66",
+    "domains": [
+      "medium.com", "substack.com", "dev.to", "hashnode.com", "wordpress.com",
+      "blogger.com", "ghost.io", "mirror.xyz", "telegra.ph", "beehiiv.com",
+      "buttondown.email", "write.as", "livejournal.com"
+    ]
+  },
+  "social": {
+    "label": "Social",
+    "description": "Social networks and public creator platforms.",
+    "color": "#ff72bd",
+    "domains": [
+      "instagram.com", "x.com", "twitter.com", "facebook.com", "threads.net",
+      "tiktok.com", "snapchat.com", "pinterest.com", "linkedin.com", "tumblr.com",
+      "bsky.app", "blueskyweb.xyz", "mastodon.social"
+    ]
+  },
+  "communities_forums": {
+    "label": "Communities & Forums",
+    "description": "Discussion boards, question-and-answer sites, and community threads.",
+    "color": "#f58c5b",
+    "domains": [
+      "reddit.com", "quora.com", "news.ycombinator.com", "producthunt.com",
+      "lemmy.world", "discourse.org", "devforum.roblox.com", "community.openai.com"
+    ]
+  },
+  "communication": {
+    "label": "Communication",
+    "description": "Messaging, email, meetings, and team communication.",
+    "color": "#45d4aa",
+    "domains": [
+      "whatsapp.com", "web.whatsapp.com", "telegram.org", "t.me", "discord.com",
+      "slack.com", "teams.microsoft.com", "zoom.us", "meet.google.com", "gmail.com",
+      "mail.google.com", "outlook.live.com", "proton.me", "protonmail.com"
+    ]
+  },
+  "ai_tools": {
+    "label": "AI Tools",
+    "description": "Generative AI assistants, model providers, and AI creation tools.",
+    "color": "#b29cff",
+    "domains": [
+      "chatgpt.com", "openai.com", "claude.ai", "anthropic.com", "gemini.google.com",
+      "ai.google.dev", "perplexity.ai", "copilot.microsoft.com", "grok.com", "poe.com",
+      "character.ai", "midjourney.com", "runwayml.com", "together.ai", "groq.com",
+      "mistral.ai", "deepseek.com", "notebooklm.google.com", "you.com"
+    ]
+  },
+  "education_learning": {
+    "label": "Education & Learning",
+    "description": "Courses, tutorials, language learning, and educational institutions.",
+    "color": "#ffd166",
+    "domains": [
+      "coursera.org", "edx.org", "udemy.com", "khanacademy.org", "ocw.mit.edu",
+      "skillshare.com", "pluralsight.com", "brilliant.org", "codecademy.com",
+      "datacamp.com", "byjus.com", "unacademy.com", "nptel.ac.in", "swayam.gov.in",
+      "toppr.com", "masterclass.com", "duolingo.com"
+    ]
+  },
+  "research_reference": {
+    "label": "Research & Reference",
+    "description": "Academic papers, scholarly databases, encyclopedias, and reference tools.",
+    "color": "#7cd6ff",
+    "domains": [
+      "wikipedia.org", "wikimedia.org", "arxiv.org", "scholar.google.com",
+      "researchgate.net", "academia.edu", "semanticscholar.org", "pubmed.ncbi.nlm.nih.gov",
+      "doi.org", "jstor.org", "sciencedirect.com", "springer.com", "link.springer.com",
+      "ieee.org", "ieeexplore.ieee.org", "acm.org", "dl.acm.org", "nature.com",
+      "science.org", "archive.org", "wolframalpha.com", "britannica.com"
+    ]
+  },
+  "news_media": {
+    "label": "News & Media",
+    "description": "Global, national, technology, and business news publications.",
+    "color": "#f3c969",
+    "domains": [
+      "reuters.com", "apnews.com", "bbc.com", "bbc.co.uk", "cnn.com", "nytimes.com",
+      "washingtonpost.com", "theguardian.com", "bloomberg.com", "wsj.com", "economist.com",
+      "time.com", "npr.org", "aljazeera.com", "ndtv.com", "indianexpress.com",
+      "hindustantimes.com", "timesofindia.indiatimes.com", "thehindu.com", "livemint.com",
+      "techcrunch.com", "theverge.com", "wired.com", "arstechnica.com", "engadget.com"
+    ]
+  },
+  "music_audio": {
+    "label": "Music & Audio",
+    "description": "Music streaming, podcasts, audiobooks, and audio communities.",
+    "color": "#60e6a8",
+    "domains": [
+      "spotify.com", "open.spotify.com", "music.apple.com", "music.youtube.com",
+      "soundcloud.com", "bandcamp.com", "mixcloud.com", "audiomack.com", "gaana.com",
+      "jiosaavn.com", "wynk.in", "audible.com", "pocketcasts.com", "overcast.fm",
+      "podcasts.apple.com"
+    ]
+  },
+  "shopping_marketplaces": {
+    "label": "Shopping & Marketplaces",
+    "description": "Retail stores, product marketplaces, and ecommerce platforms.",
+    "color": "#ff8d8d",
+    "domains": [
+      "amazon.com", "amazon.in", "amazon.co.uk", "amazon.de", "amazon.co.jp", "ebay.com",
+      "flipkart.com", "walmart.com", "etsy.com", "aliexpress.com", "temu.com", "myntra.com",
+      "ajio.com", "meesho.com", "snapdeal.com", "ikea.com", "target.com", "bestbuy.com",
+      "shopify.com"
+    ]
+  },
+  "finance_payments": {
+    "label": "Finance & Payments",
+    "description": "Payments, banking, investing, markets, and financial information.",
+    "color": "#58d6c7",
+    "domains": [
+      "paypal.com", "stripe.com", "wise.com", "paytm.com", "phonepe.com", "razorpay.com",
+      "coinbase.com", "binance.com", "robinhood.com", "zerodha.com", "groww.in", "upstox.com",
+      "tradingview.com", "investing.com", "moneycontrol.com", "finance.yahoo.com"
+    ]
+  },
+  "productivity_collaboration": {
+    "label": "Productivity & Collaboration",
+    "description": "Planning, project coordination, notes, calendars, and collaboration tools.",
+    "color": "#8fb7ff",
+    "domains": [
+      "notion.so", "notion.site", "trello.com", "asana.com", "clickup.com", "monday.com",
+      "airtable.com", "miro.com", "linear.app", "atlassian.com", "jira.com", "calendly.com",
+      "evernote.com", "todoist.com", "ticktick.com", "obsidian.md", "loom.com"
+    ]
+  },
+  "cloud_documents": {
+    "label": "Cloud & Documents",
+    "description": "Cloud drives, collaborative documents, presentations, and file transfer.",
+    "color": "#66b8ff",
+    "domains": [
+      "docs.google.com", "drive.google.com", "dropbox.com", "onedrive.live.com", "box.com",
+      "icloud.com", "office.com", "sharepoint.com", "scribd.com", "slideshare.net",
+      "docsend.com", "wetransfer.com"
+    ]
+  },
+  "design_creative": {
+    "label": "Design & Creative",
+    "description": "Design tools, creative portfolios, fonts, stock media, and inspiration.",
+    "color": "#df8cff",
+    "domains": [
+      "figma.com", "canva.com", "dribbble.com", "behance.net", "adobe.com", "unsplash.com",
+      "pexels.com", "pixabay.com", "artstation.com", "deviantart.com", "sketchfab.com",
+      "framer.com", "coolors.co", "fonts.google.com", "milanote.com"
+    ]
+  },
+  "jobs_careers": {
+    "label": "Jobs & Careers",
+    "description": "Job boards, freelance work, internships, and applicant portals.",
+    "color": "#f5b971",
+    "domains": [
+      "indeed.com", "glassdoor.com", "naukri.com", "wellfound.com", "monster.com",
+      "ziprecruiter.com", "upwork.com", "freelancer.com", "fiverr.com", "remoteok.com",
+      "weworkremotely.com", "greenhouse.io", "lever.co", "myworkdayjobs.com",
+      "internshala.com", "cutshort.io"
+    ]
+  },
+  "travel_places": {
+    "label": "Travel & Places",
+    "description": "Maps, transport, accommodation, travel planning, and local discovery.",
+    "color": "#62d6e8",
+    "domains": [
+      "maps.google.com", "tripadvisor.com", "booking.com", "airbnb.com", "makemytrip.com",
+      "goibibo.com", "cleartrip.com", "expedia.com", "kayak.com", "skyscanner.com",
+      "uber.com", "olacabs.com", "redbus.in", "irctc.co.in", "ixigo.com", "rome2rio.com"
+    ]
+  },
+  "food_dining": {
+    "label": "Food & Dining",
+    "description": "Restaurants, food delivery, recipes, and dining reservations.",
+    "color": "#ff9a72",
+    "domains": [
+      "zomato.com", "swiggy.com", "doordash.com", "ubereats.com", "grubhub.com",
+      "opentable.com", "allrecipes.com", "foodnetwork.com", "dominos.com", "pizzahut.com"
+    ]
+  },
+  "health_fitness": {
+    "label": "Health & Fitness",
+    "description": "Fitness tracking, healthcare information, wellness, and medical services.",
+    "color": "#67d7a5",
+    "domains": [
+      "strava.com", "myfitnesspal.com", "fitbit.com", "healthline.com", "webmd.com",
+      "mayoclinic.org", "practo.com", "1mg.com", "headspace.com", "calm.com", "nih.gov"
+    ]
+  },
+  "entertainment_books": {
+    "label": "Entertainment & Books",
+    "description": "Film databases, books, comics, fiction, and entertainment discovery.",
+    "color": "#e99cff",
+    "domains": [
+      "imdb.com", "rottentomatoes.com", "letterboxd.com", "goodreads.com", "comicbook.com",
+      "fanfiction.net", "royalroad.com", "webtoons.com", "marvel.com", "dc.com"
+    ]
+  },
+  "gaming": {
+    "label": "Gaming",
+    "description": "Game stores, publishers, platforms, and game communities.",
+    "color": "#9d8cff",
+    "domains": [
+      "steampowered.com", "store.steampowered.com", "epicgames.com", "gog.com", "itch.io",
+      "xbox.com", "playstation.com", "nintendo.com", "ea.com", "battle.net", "roblox.com",
+      "minecraft.net"
+    ]
+  },
+  "search_discovery": {
+    "label": "Search & Discovery",
+    "description": "General search engines and web discovery tools.",
+    "color": "#8cb4ff",
+    "domains": [
+      "google.com", "bing.com", "duckduckgo.com", "search.brave.com", "yahoo.com",
+      "startpage.com", "ecosia.org"
+    ]
+  },
+  "government_public": {
+    "label": "Government & Public Services",
+    "description": "Government information, identity, tax, and public service portals.",
+    "color": "#aab9ca",
+    "domains": [
+      "gov.in", "india.gov.in", "uidai.gov.in", "incometax.gov.in", "passportindia.gov.in",
+      "digilocker.gov.in", "usa.gov", "data.gov"
+    ]
+  },
+  "link_shortener": {
+    "label": "Short Link",
+    "description": "Redirect and profile-link services whose final destination cannot be inferred offline.",
+    "color": "#9a9faa",
+    "domains": [
+      "bit.ly", "t.co", "tinyurl.com", "shorturl.at", "linktr.ee", "beacons.ai",
+      "lnk.bio", "cutt.ly", "rebrand.ly", "goo.gl"
+    ]
+  },
+  "unknown": {
+    "label": "Unknown",
+    "description": "No deterministic rule matched this URL yet.",
+    "color": "#777d8a",
+    "domains": []
+  }
+}

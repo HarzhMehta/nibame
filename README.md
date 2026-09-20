@@ -18,6 +18,40 @@ We save reels, DM ourselves links, and bookmark things we swear we'll come back 
   <img src="assets/nibame_philosophy.svg" alt="nibame core" width="680"/>
 </p>
 
+## Current foundation: URL organization
+
+The first working vertical slice is a deterministic URL categorizer. It identifies a
+link's platform family from local domain, path, and file rules without fetching the page
+or calling an AI service.
+
+```text
+backend/   FastAPI API, category rules, and manual overrides
+frontend/  Next.js capture interface with category correction
+```
+
+No database is required. Curated rules live in `backend/category_rules.json`; optional
+manual corrections are stored in `backend/data/user_patterns.json`.
+
+### Run locally
+
+Backend:
+
+```bash
+python3 -m venv backend/.venv
+backend/.venv/bin/pip install -r backend/requirements.txt
+backend/.venv/bin/uvicorn backend.main:app --reload --port 8000
+```
+
+Frontend, in a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev -- --port 3002
+```
+
+Open `http://localhost:3002`.
+
 Sooo, 
 **nibame** is personal context engine (basically an organized database).
 
