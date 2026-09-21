@@ -17,6 +17,7 @@ from backend.categorizer import (
     get_categories,
     load_category_definitions,
 )
+from backend.metadata import fetch_metadata_async
 
 
 class CategorizeRequest(BaseModel):
@@ -26,6 +27,10 @@ class CategorizeRequest(BaseModel):
 class OverrideRequest(BaseModel):
     domain: str = Field(min_length=1, max_length=253)
     category: str = Field(min_length=1, max_length=80)
+
+
+class MetadataRequest(BaseModel):
+    url: str = Field(min_length=1, max_length=4096)
 
 
 app = FastAPI(
@@ -74,6 +79,17 @@ def categories() -> dict[str, object]:
 @app.post("/api/categorize")
 def categorize_link(request: CategorizeRequest) -> dict[str, object]:
     result = categorize_url(request.url)
+    if not result.is_valid:
+        raise HTTPException(
+            status_code=422,
+            detail="Enter a valid HTTP(S) URL or bare domain.",
+        )
+    return result.to_dict()
+
+
+@app.post("/api/metadata")
+async def extract_metadata(request: MetadataRequest) -> dict[str, object]:
+    result = await fetch_metadata_async(request.url)
     if not result.is_valid:
         raise HTTPException(
             status_code=422,
