@@ -18,6 +18,20 @@ We save reels, DM ourselves links, and bookmark things we swear we'll come back 
   <img src="assets/nibame_philosophy.svg" alt="nibame core" width="680"/>
 </p>
 
+## Before we begin this readme
+My personal note - I'm Harsh Mehta, this readme was my memory dump that i shared with claude and it has converted into a structured format. Before you hop on to the AI generated things, I wanted to share some handwritten thoughts. 
+
+[ Note as of 16th sept - I dont mean for this proj to be some repo / github farming slop. I also dont intend for this to be some second brain bs. Its just an idea or gutt feeling i had or maybe an urge to have a project like this. I discussed this idea with some of my friends and they gave a lot of critical feedback on it which makes sense. The project does not have clear definitions yet and I (we) really need to handle this with extreme caution or this project will end up becoming another random productivity app that we download and dont use ] 
+
+My main wish is to have 4 main parts of this project working which we all can use in our lives. 
+
+- 1. Personal life links and context (todo, goals, habits, anything else) dump
+- 2. Work life context, meetings, notes, todo, etc
+- 3. Personal network graph like thing with a LOT of filters. I wanna make a system which can visualize personal network of network of communities (eg an OSS community's graph where we can all have a fun visualization of the same). I hope you get the point. 
+- 4. This is the 4th point but the first most important thing, to have a very robust system design for this. Through this project I want to learn more things with depth and become a better engineer. That said i also want my fellow friends, juniors and folks get started with OSS in general or grow at it.
+
+---
+
 ## Current foundation: URL organization
 
 The first working vertical slice is a deterministic URL categorizer. It identifies a
@@ -55,22 +69,7 @@ Open `http://localhost:3002`.
 Sooo, 
 **nibame** is personal context engine (basically an organized database).
 
-## Before we begin this readme
-My personal note - I'm Harsh Mehta, this readme was my memory dump that i shared with claude and it has converted into a structured format. Before you hop on to the AI generated things, I wanted to share some handwritten thoughts. 
-
-[ Note as of 16th sept - I dont mean for this proj to be some repo / github farming slop. I also dont intend for this to be some second brain bs. Its just an idea or gutt feeling i had or maybe an urge to have a project like this. I discussed this idea with some of my friends and they gave a lot of critical feedback on it which makes sense. The project does not have clear definitions yet and I (we) really need to handle this with extreme caution or this project will end up becoming another random productivity app that we download and dont use ] 
-
-My main wish is to have 4 main parts of this project working which we all can use in our lives. 
-
-- 1. Personal life links and context (todo, goals, habits, anything else) dump
-- 2. Work life context, meetings, notes, todo, etc
-- 3. Personal network graph like thing with a LOT of filters. I wanna make a system which can visualize personal network of network of communities (eg an OSS community's graph where we can all have a fun visualization of the same). I hope you get the point. 
-- 4. This is the 4th point but the first most important thing, to have a very robust system design for this. Through this project I want to learn more things with depth and become a better engineer. That said i also want my fellow friends, juniors and folks get started with OSS in general or grow at it.
-
 Join the discord - https://discord.gg/jfj7tSQRU5
-
-To reach out to me, or for my personal info u can check my linkedin and github profile.
-
 
 --- 
 
@@ -86,7 +85,7 @@ It gives you one place to capture, organize, connect, and retrieve the informati
 * [4. How nibame Thinks About Your Life](#4-how-nibame-thinks-about-your-life)
 * [5. Capture Everything](#5-capture-everything)
 * [6. Memory and Context](#6-memory-and-context)
-* [7. Ask Your Brain](#7-ask-your-brain)
+* [7. Ask Your Context](#7-ask-your-brain)
 * [8. Intelligence and Connections](#8-intelligence-and-connections)
 * [9. Personal Layer](#9-personal-layer)
 * [10. Social and Professional Network](#10-social-and-professional-network)
@@ -108,7 +107,7 @@ The name **nibame** comes from the Japanese word for "second".
 
 The idea is simple:
 
-> **nibame is the a database system that remembers, understands, and connects the things your real brain comes across every day.**
+> **nibame is the a database system that remembers, understands, and connects the things your monkey brain comes across every day.**
 
 Today, information about our lives is scattered across dozens of different places:
 
@@ -259,7 +258,7 @@ Internally, nibame can be thought of as four interconnected layers:
 
 These are internal concepts, not necessarily separate sections that the user has to navigate through.
 
-The goal is still **one brain**.
+
 
 ---
 
@@ -364,6 +363,7 @@ The graph is the underlying memory structure. The UI is simply one way of explor
 ---
 
 # 7. Ask Your Brain
+Well its not brain but just organized db
 
 Storing information is only half the problem.
 
@@ -697,13 +697,13 @@ Dashboard
 
 That creates the same problem we are trying to solve.
 
-The interface should feel like one unified brain.
+The interface should feel like one unified store of context.
 
 A possible starting point:
 
 ```text
 +------------------------------------------------+
-|  Search your brain...                      K  |
+|  Search your context...                      K  |
 +------------------------------------------------+
 |                                                |
 |                  YOUR CONTEXT                  |
@@ -726,7 +726,7 @@ The primary interactions should be:
 
 ### Capture
 
-Put something into your brain.
+Put something into your text box.
 
 ### Search
 
@@ -760,7 +760,7 @@ Connect information instead of burying it inside isolated pages.
 
 Users should be able to find information based on what they remember, not where they stored it.
 
-### 5. One brain, multiple contexts
+### 5. One application, multiple contexts
 
 Personal, work, learning, and social information should share a common context engine while remaining logically separable.
 

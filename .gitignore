@@ -2,10 +2,12 @@
 __pycache__/
 *.py[cod]
 .venv/
+**/venv/
+**/.venv/
 .pytest_cache/
 
 # Next.js
-frontend/node_modules/
+**/node_modules/
 frontend/.next/
 frontend/out/
 frontend/.env.local
