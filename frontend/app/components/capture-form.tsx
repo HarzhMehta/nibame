@@ -55,6 +55,8 @@ export default function CaptureForm(): ReactElement {
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [customSampleLink, setCustomSampleLink] = useState("");
+  const [categoryMode, setCategoryMode] = useState<"existing" | "new">("existing");
+  const [existingCategoryId, setExistingCategoryId] = useState("");
   const [categoryError, setCategoryError] = useState("");
   const [pendingConflict, setPendingConflict] = useState<PendingCategoryConflict | null>(null);
   const categoryNameRef = useRef<HTMLInputElement>(null);
@@ -128,9 +130,53 @@ export default function CaptureForm(): ReactElement {
   const resetCategoryForm = (): void => {
     setCustomCategoryName("");
     setCustomSampleLink("");
+    setCategoryMode("existing");
+    setExistingCategoryId("");
     setCategoryError("");
     setPendingConflict(null);
     setIsCategoryFormOpen(false);
+  };
+
+  const handleAssignExistingCategory = (
+    event: FormEvent<HTMLFormElement>,
+  ): void => {
+    event.preventDefault();
+    setCategoryError("");
+
+    const category = allCategories.find(
+      (candidate) => candidate.id === existingCategoryId,
+    );
+    if (!category) {
+      setCategoryError("Choose a category.");
+      return;
+    }
+
+    const parsed = parseUrl(customSampleLink);
+    if (!parsed) {
+      setCategoryError("Enter a valid HTTP(S) link or bare domain.");
+      sampleLinkRef.current?.focus();
+      return;
+    }
+
+    const rule = { domain: parsed.ruleDomain, categoryId: category.id };
+    setCustomDomainRules((currentRules) => [
+      ...currentRules.filter((candidate) => candidate.domain !== rule.domain),
+      rule,
+    ]);
+    setUrl(customSampleLink.trim());
+    setResult(customResult(category, parsed));
+    setSelectedCategory(category.id);
+    setIsEditing(false);
+    resetCategoryForm();
+
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(".capture-result")?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "center",
+      });
+    });
   };
 
   const commitCustomCategory = (
@@ -335,22 +381,67 @@ export default function CaptureForm(): ReactElement {
           <form
             id="custom-category-form"
             className="custom-category-form"
-            onSubmit={handleCreateCategory}
+            onSubmit={
+              categoryMode === "existing"
+                ? handleAssignExistingCategory
+                : handleCreateCategory
+            }
           >
+            <div className="category-mode" role="group" aria-label="Category action">
+              <button
+                type="button"
+                aria-pressed={categoryMode === "existing"}
+                onClick={() => {
+                  setCategoryMode("existing");
+                  setCategoryError("");
+                  setPendingConflict(null);
+                }}
+              >
+                Existing category
+              </button>
+              <button
+                type="button"
+                aria-pressed={categoryMode === "new"}
+                onClick={() => {
+                  setCategoryMode("new");
+                  setCategoryError("");
+                  setPendingConflict(null);
+                }}
+              >
+                New category
+              </button>
+            </div>
+
             <div className="custom-category-fields">
-              <label>
-                <span>Category name</span>
-                <input
-                  ref={categoryNameRef}
-                  type="text"
-                  value={customCategoryName}
-                  onChange={(event) => setCustomCategoryName(event.target.value)}
-                  minLength={2}
-                  maxLength={40}
-                  disabled={Boolean(pendingConflict)}
-                  autoFocus
-                />
-              </label>
+              {categoryMode === "new" ? (
+                <label>
+                  <span>Category name</span>
+                  <input
+                    ref={categoryNameRef}
+                    type="text"
+                    value={customCategoryName}
+                    onChange={(event) => setCustomCategoryName(event.target.value)}
+                    minLength={2}
+                    maxLength={40}
+                    disabled={Boolean(pendingConflict)}
+                    autoFocus
+                  />
+                </label>
+              ) : (
+                <label>
+                  <span>Category</span>
+                  <select
+                    value={existingCategoryId}
+                    onChange={(event) => setExistingCategoryId(event.target.value)}
+                    autoFocus
+                  >
+                    <option value="">Choose category</option>
+                    {allCategories.map((category) => (
+                      <option key={category.id} value={category.id}>{category.label}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label>
                 <span>Sample link</span>
                 <input
@@ -380,7 +471,9 @@ export default function CaptureForm(): ReactElement {
               </div>
             ) : (
               <div className="custom-category-actions">
-                <button type="submit">Create category</button>
+                <button type="submit">
+                  {categoryMode === "existing" ? "Assign category" : "Create category"}
+                </button>
                 <button type="button" onClick={resetCategoryForm}>Cancel</button>
               </div>
             )}

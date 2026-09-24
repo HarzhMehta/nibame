@@ -229,6 +229,34 @@ select:focus-visible {
   background: #0d0f12;
 }
 
+.category-mode {
+  display: inline-grid;
+  grid-template-columns: repeat(2, auto);
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--line);
+}
+
+.category-mode button {
+  min-height: 2.4rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  cursor: pointer;
+}
+
+.category-mode button:last-child {
+  border-right: 0;
+}
+
+.category-mode button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--page);
+}
+
 .custom-category-fields {
   display: grid;
   grid-template-columns: minmax(12rem, 0.65fr) minmax(16rem, 1fr);
@@ -243,7 +271,8 @@ select:focus-visible {
   font-size: 0.62rem;
 }
 
-.custom-category-fields input {
+.custom-category-fields input,
+.custom-category-fields select {
   width: 100%;
   min-height: 3rem;
   padding: 0 0.75rem;
@@ -255,7 +284,8 @@ select:focus-visible {
   font-size: 0.72rem;
 }
 
-.custom-category-fields input:focus {
+.custom-category-fields input:focus,
+.custom-category-fields select:focus {
   border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(114, 167, 255, 0.08);
 }
@@ -552,6 +582,12 @@ select:focus-visible {
 
   .custom-category-fields {
     grid-template-columns: 1fr;
+  }
+
+  .category-mode {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
   }
 
   .custom-category-actions,
