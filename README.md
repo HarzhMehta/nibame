@@ -20,29 +20,15 @@ We save reels, DM ourselves links, and bookmark things we swear we'll come back 
 
 ## Current foundation: URL organization
 
-The first working vertical slice is a deterministic URL categorizer. It identifies a
-link's platform family from local domain, path, and file rules without fetching the page
-or calling an AI service.
+The first working vertical slice is a deterministic URL categorizer inside the Next.js
+application. It identifies a link's platform family from bundled domain, path, and file
+rules without fetching the page or calling an AI service.
 
-```text
-backend/   FastAPI API, category rules, and manual overrides
-frontend/  Next.js capture interface with category correction
-```
-
-No database is required. Curated rules live in `backend/category_rules.json`; optional
-manual corrections are stored in `backend/data/user_patterns.json`.
+No database or separate backend is required. Curated rules live in
+`frontend/app/lib/category-rules.json`, and manual corrections remain temporary for the
+current browser session.
 
 ### Run locally
-
-Backend:
-
-```bash
-python3 -m venv backend/.venv
-backend/.venv/bin/pip install -r backend/requirements.txt
-backend/.venv/bin/uvicorn backend.main:app --reload --port 8000
-```
-
-Frontend, in a second terminal:
 
 ```bash
 cd frontend

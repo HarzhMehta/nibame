@@ -1,69 +1,44 @@
 "use client";
 
 import type { CSSProperties, FormEvent, ReactElement } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
+  categorizeUrl,
   categoryNameExists,
   createCustomCategory,
-  createSessionCategoryState,
-  findCustomRule,
-  parseRuleDomain,
+  findSessionRule,
+  getBuiltInCategories,
+  parseUrl,
+  type CategorizationResult,
+  type CategoryDefinition,
+  type CategorySummary,
   type CustomCategory,
-  type CustomDomainRule,
-  type ParsedRuleDomain,
-} from "../lib/session-categories";
-
-interface CategoryDefinition {
-  id: string;
-  label: string;
-  color: string;
-  domain_count: number;
-  examples: Array<string>;
-  isCustom?: false;
-}
-
-interface CategoriesResponse {
-  categories: Array<CategoryDefinition>;
-}
-
-interface CategorizationResult {
-  domain: string;
-  category: string;
-  category_label: string;
-  color: string;
-}
-
-interface OverrideResponse {
-  result: CategorizationResult;
-}
+  type ParsedUrl,
+  type SessionDomainRule,
+} from "../lib/url-categorizer";
 
 interface PendingCategoryConflict {
   category: CustomCategory;
-  rule: CustomDomainRule;
-  parsed: ParsedRuleDomain;
+  rule: SessionDomainRule;
+  parsed: ParsedUrl;
   sampleLink: string;
   existingLabel: string;
 }
 
-async function getErrorMessage(response: Response): Promise<string> {
-  try {
-    const payload = (await response.json()) as { detail?: string };
-    return payload.detail ?? "Something went wrong.";
-  } catch {
-    return "Something went wrong.";
-  }
-}
-
 function customResult(
-  category: CustomCategory,
-  parsed: ParsedRuleDomain,
+  category: CategorySummary,
+  parsed: ParsedUrl,
 ): CategorizationResult {
   return {
     domain: parsed.hostname,
     category: category.id,
     category_label: category.label,
     color: category.color,
+    matched_by: "session_rule",
+    matched_rule: parsed.ruleDomain,
+    confidence: "high",
+    is_valid: true,
   };
 }
 
@@ -71,24 +46,16 @@ function customResult(
 export default function CaptureForm(): ReactElement {
   const [url, setUrl] = useState("");
   const [result, setResult] = useState<CategorizationResult | null>(null);
-  const [categories, setCategories] = useState<Array<CategoryDefinition>>([]);
+  const categories = useMemo<Array<CategoryDefinition>>(() => getBuiltInCategories(), []);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState("");
-  const initialSessionState = useMemo(() => createSessionCategoryState(), []);
-  const [customCategories, setCustomCategories] = useState<Array<CustomCategory>>(
-    initialSessionState.categories,
-  );
-  const [customDomainRules, setCustomDomainRules] = useState<Array<CustomDomainRule>>(
-    initialSessionState.rules,
-  );
+  const [customCategories, setCustomCategories] = useState<Array<CustomCategory>>([]);
+  const [customDomainRules, setCustomDomainRules] = useState<Array<SessionDomainRule>>([]);
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [customSampleLink, setCustomSampleLink] = useState("");
   const [categoryError, setCategoryError] = useState("");
-  const [isCheckingConflict, setIsCheckingConflict] = useState(false);
   const [pendingConflict, setPendingConflict] = useState<PendingCategoryConflict | null>(null);
   const categoryNameRef = useRef<HTMLInputElement>(null);
   const sampleLinkRef = useRef<HTMLInputElement>(null);
@@ -98,99 +65,57 @@ export default function CaptureForm(): ReactElement {
     [categories, customCategories],
   );
 
-  useEffect(() => {
-    const loadCategories = async (): Promise<void> => {
-      try {
-        const response = await fetch("/api/backend/categories");
-        if (!response.ok) return;
-        const payload = (await response.json()) as CategoriesResponse;
-        setCategories(payload.categories.filter((category) => category.id !== "unknown"));
-      } catch {
-        setCategories([]);
-      }
-    };
-    void loadCategories();
-  }, []);
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!url.trim()) {
       setError("Enter a link.");
       return;
     }
 
-    setIsSubmitting(true);
     setError("");
     setResult(null);
     setIsEditing(false);
 
-    try {
-      const sessionRule = findCustomRule(url.trim(), customDomainRules);
-      if (sessionRule) {
-        const category = customCategories.find(
-          (candidate) => candidate.id === sessionRule.categoryId,
-        );
-        const parsed = parseRuleDomain(url.trim());
-        if (category && parsed) {
-          setResult(customResult(category, parsed));
-          setSelectedCategory(category.id);
-          return;
-        }
-      }
-
-      const response = await fetch("/api/backend/categorize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
-      });
-      if (!response.ok) throw new Error(await getErrorMessage(response));
-      const payload = (await response.json()) as CategorizationResult;
-      setResult(payload);
-      setSelectedCategory(payload.category === "unknown" ? "" : payload.category);
-      setIsEditing(payload.category === "unknown");
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Something went wrong.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleOverride = async (): Promise<void> => {
-    if (!result || !selectedCategory) return;
-    setIsSaving(true);
-    setError("");
-
-    try {
-      const customCategory = customCategories.find(
-        (category) => category.id === selectedCategory,
+    const sessionRule = findSessionRule(url.trim(), customDomainRules);
+    if (sessionRule) {
+      const category = allCategories.find(
+        (candidate) => candidate.id === sessionRule.categoryId,
       );
-      if (customCategory) {
-        const parsed = parseRuleDomain(result.domain);
-        if (!parsed) throw new Error("Could not read this domain.");
-
-        setCustomDomainRules((currentRules) => [
-          ...currentRules.filter((rule) => rule.domain !== parsed.ruleDomain),
-          { domain: parsed.ruleDomain, categoryId: customCategory.id },
-        ]);
-        setResult(customResult(customCategory, parsed));
-        setIsEditing(false);
+      const parsed = parseUrl(url.trim());
+      if (category && parsed) {
+        setResult(customResult(category, parsed));
+        setSelectedCategory(category.id);
         return;
       }
-
-      const response = await fetch("/api/backend/overrides", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: result.domain, category: selectedCategory }),
-      });
-      if (!response.ok) throw new Error(await getErrorMessage(response));
-      const payload = (await response.json()) as OverrideResponse;
-      setResult(payload.result);
-      setIsEditing(false);
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Something went wrong.");
-    } finally {
-      setIsSaving(false);
     }
+
+    const categorized = categorizeUrl(url.trim());
+    if (!categorized.is_valid) {
+      setError("Enter a valid HTTP(S) URL or bare domain.");
+      return;
+    }
+    setResult(categorized);
+    setSelectedCategory(categorized.category === "unknown" ? "" : categorized.category);
+    setIsEditing(categorized.category === "unknown");
+  };
+
+  const handleOverride = (): void => {
+    if (!result || !selectedCategory) return;
+    setError("");
+
+    const category = allCategories.find((candidate) => candidate.id === selectedCategory);
+    const parsed = parseUrl(result.domain);
+    if (!category || !parsed) {
+      setError("Could not update this category.");
+      return;
+    }
+
+    setCustomDomainRules((currentRules) => [
+      ...currentRules.filter((rule) => rule.domain !== parsed.ruleDomain),
+      { domain: parsed.ruleDomain, categoryId: category.id },
+    ]);
+    setResult(customResult(category, parsed));
+    setIsEditing(false);
   };
 
   const handleReset = (): void => {
@@ -210,8 +135,8 @@ export default function CaptureForm(): ReactElement {
 
   const commitCustomCategory = (
     category: CustomCategory,
-    rule: CustomDomainRule,
-    parsed: ParsedRuleDomain,
+    rule: SessionDomainRule,
+    parsed: ParsedUrl,
     sampleLink: string,
   ): void => {
     setCustomCategories((currentCategories) => [...currentCategories, category]);
@@ -235,9 +160,7 @@ export default function CaptureForm(): ReactElement {
     });
   };
 
-  const handleCreateCategory = async (
-    event: FormEvent<HTMLFormElement>,
-  ): Promise<void> => {
+  const handleCreateCategory = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     const normalizedName = customCategoryName.trim();
     const nameLength = Array.from(normalizedName).length;
@@ -257,7 +180,7 @@ export default function CaptureForm(): ReactElement {
       return;
     }
 
-    const parsed = parseRuleDomain(customSampleLink);
+    const parsed = parseUrl(customSampleLink);
     if (!parsed) {
       setCategoryError("Enter a valid HTTP(S) link or bare domain.");
       sampleLinkRef.current?.focus();
@@ -274,46 +197,31 @@ export default function CaptureForm(): ReactElement {
       (candidate) => candidate.domain === parsed.ruleDomain,
     );
 
-    setIsCheckingConflict(true);
-    try {
-      let existingLabel = existingCustomRule
-        ? customCategories.find(
-            (candidate) => candidate.id === existingCustomRule.categoryId,
-          )?.label ?? "another custom category"
-        : "";
+    let existingLabel = existingCustomRule
+      ? customCategories.find(
+          (candidate) => candidate.id === existingCustomRule.categoryId,
+        )?.label ?? "another custom category"
+      : "";
 
-      if (!existingLabel) {
-        const response = await fetch("/api/backend/categorize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: customSampleLink.trim() }),
-        });
-        if (!response.ok) throw new Error(await getErrorMessage(response));
-        const builtInResult = (await response.json()) as CategorizationResult;
-        if (builtInResult.category !== "unknown") {
-          existingLabel = builtInResult.category_label;
-        }
+    if (!existingLabel) {
+      const builtInResult = categorizeUrl(customSampleLink.trim());
+      if (builtInResult.category !== "unknown") {
+        existingLabel = builtInResult.category_label;
       }
-
-      if (existingLabel) {
-        setPendingConflict({
-          category,
-          rule,
-          parsed,
-          sampleLink: customSampleLink.trim(),
-          existingLabel,
-        });
-        return;
-      }
-
-      commitCustomCategory(category, rule, parsed, customSampleLink.trim());
-    } catch (caughtError) {
-      setCategoryError(
-        caughtError instanceof Error ? caughtError.message : "Could not create category.",
-      );
-    } finally {
-      setIsCheckingConflict(false);
     }
+
+    if (existingLabel) {
+      setPendingConflict({
+        category,
+        rule,
+        parsed,
+        sampleLink: customSampleLink.trim(),
+        existingLabel,
+      });
+      return;
+    }
+
+    commitCustomCategory(category, rule, parsed, customSampleLink.trim());
   };
 
   const handleConfirmConflict = (): void => {
@@ -335,7 +243,7 @@ export default function CaptureForm(): ReactElement {
           <p>nibame sorts it automatically. Change the category whenever you need.</p>
         </header>
 
-        <form className="capture-form" onSubmit={(event) => void handleSubmit(event)}>
+        <form className="capture-form" onSubmit={handleSubmit}>
           <label htmlFor="capture-url">Link</label>
           <div className="capture-input-row">
             <input
@@ -346,12 +254,9 @@ export default function CaptureForm(): ReactElement {
               value={url}
               onChange={(event) => setUrl(event.target.value)}
               placeholder="https://"
-              disabled={isSubmitting}
               autoFocus
             />
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Adding…" : "Add link"}
-            </button>
+            <button type="submit">Add link</button>
           </div>
         </form>
 
@@ -393,10 +298,10 @@ export default function CaptureForm(): ReactElement {
                   </select>
                   <button
                     type="button"
-                    onClick={() => void handleOverride()}
-                    disabled={!selectedCategory || isSaving}
+                    onClick={handleOverride}
+                    disabled={!selectedCategory}
                   >
-                    {isSaving ? "Saving…" : "Save"}
+                    Save
                   </button>
                 </div>
               </div>
@@ -430,7 +335,7 @@ export default function CaptureForm(): ReactElement {
           <form
             id="custom-category-form"
             className="custom-category-form"
-            onSubmit={(event) => void handleCreateCategory(event)}
+            onSubmit={handleCreateCategory}
           >
             <div className="custom-category-fields">
               <label>
@@ -442,7 +347,7 @@ export default function CaptureForm(): ReactElement {
                   onChange={(event) => setCustomCategoryName(event.target.value)}
                   minLength={2}
                   maxLength={40}
-                  disabled={isCheckingConflict || Boolean(pendingConflict)}
+                  disabled={Boolean(pendingConflict)}
                   autoFocus
                 />
               </label>
@@ -455,7 +360,7 @@ export default function CaptureForm(): ReactElement {
                   value={customSampleLink}
                   onChange={(event) => setCustomSampleLink(event.target.value)}
                   placeholder="https://example.com"
-                  disabled={isCheckingConflict || Boolean(pendingConflict)}
+                  disabled={Boolean(pendingConflict)}
                 />
               </label>
             </div>
@@ -475,9 +380,7 @@ export default function CaptureForm(): ReactElement {
               </div>
             ) : (
               <div className="custom-category-actions">
-                <button type="submit" disabled={isCheckingConflict}>
-                  {isCheckingConflict ? "Checking…" : "Create category"}
-                </button>
+                <button type="submit">Create category</button>
                 <button type="button" onClick={resetCategoryForm}>Cancel</button>
               </div>
             )}
