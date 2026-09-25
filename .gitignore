@@ -9,3 +9,7 @@ frontend/.env.local
 .DS_Store
 .idea/
 .vscode/
+
+# eeee en viiii :)
+**/.env/
+.env

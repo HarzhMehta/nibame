@@ -3,11 +3,11 @@
 import type { CSSProperties, FormEvent, ReactElement } from "react";
 import { useMemo, useRef, useState } from "react";
 
+import type { SavedLink } from "../lib/link-types";
 import {
   categorizeUrl,
   categoryNameExists,
   createCustomCategory,
-  findSessionRule,
   getBuiltInCategories,
   parseUrl,
   type CategorizationResult,
@@ -17,13 +17,33 @@ import {
   type ParsedUrl,
   type SessionDomainRule,
 } from "../lib/url-categorizer";
+import CustomSelect, { type CustomSelectOption } from "./custom-select";
+
+interface CaptureFormProps {
+  initialCustomCategories: Array<CustomCategory>;
+  initialCustomDomainRules: Array<SessionDomainRule>;
+  initialSavedLinks: Array<SavedLink>;
+}
 
 interface PendingCategoryConflict {
-  category: CustomCategory;
-  rule: SessionDomainRule;
+  name: string;
   parsed: ParsedUrl;
   sampleLink: string;
   existingLabel: string;
+}
+
+interface ApiEnvelope<T> {
+  data?: T;
+  error?: { message?: string };
+}
+
+async function requestData<T>(url: string, init: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
+  const payload = (await response.json()) as ApiEnvelope<T>;
+  if (!response.ok || !payload.data) {
+    throw new Error(payload.error?.message ?? "Could not save this change. Try again.");
+  }
+  return payload.data;
 }
 
 function customResult(
@@ -35,23 +55,40 @@ function customResult(
     category: category.id,
     category_label: category.label,
     color: category.color,
-    matched_by: "session_rule",
+    matched_by: "user_rule",
     matched_rule: parsed.ruleDomain,
     confidence: "high",
     is_valid: true,
   };
 }
 
-/** Capture and categorize a URL with an optional manual correction. */
-export default function CaptureForm(): ReactElement {
+function savedLinkResult(link: SavedLink): CategorizationResult {
+  return {
+    domain: link.domain,
+    category: link.categoryId,
+    category_label: link.categoryLabel,
+    color: link.color,
+    matched_by: "saved_link",
+    matched_rule: link.ruleDomain,
+    confidence: "high",
+    is_valid: true,
+  };
+}
+
+/** Capture and categorize a URL with persistent user corrections. */
+export default function CaptureForm({
+  initialCustomCategories,
+  initialCustomDomainRules,
+  initialSavedLinks,
+}: CaptureFormProps): ReactElement {
   const [url, setUrl] = useState("");
   const [result, setResult] = useState<CategorizationResult | null>(null);
   const categories = useMemo<Array<CategoryDefinition>>(() => getBuiltInCategories(), []);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState("");
-  const [customCategories, setCustomCategories] = useState<Array<CustomCategory>>([]);
-  const [customDomainRules, setCustomDomainRules] = useState<Array<SessionDomainRule>>([]);
+  const [customCategories, setCustomCategories] = useState(initialCustomCategories);
+  const [customDomainRules, setCustomDomainRules] = useState(initialCustomDomainRules);
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [customSampleLink, setCustomSampleLink] = useState("");
@@ -59,6 +96,19 @@ export default function CaptureForm(): ReactElement {
   const [existingCategoryId, setExistingCategoryId] = useState("");
   const [categoryError, setCategoryError] = useState("");
   const [pendingConflict, setPendingConflict] = useState<PendingCategoryConflict | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingLink, setIsSavingLink] = useState(false);
+  const [savedLinks, setSavedLinks] = useState(initialSavedLinks);
+  const [linkFilter, setLinkFilter] = useState("all");
+  const [linkSearch, setLinkSearch] = useState("");
+  const [linkSort, setLinkSort] = useState<"newest" | "oldest">("newest");
+  const [pendingDeleteLink, setPendingDeleteLink] = useState<string | null>(null);
+  const [deletingLink, setDeletingLink] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
+  const [pendingDeleteCategory, setPendingDeleteCategory] = useState<string | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<string | null>(null);
+  const [categoryDirectoryError, setCategoryDirectoryError] = useState("");
   const categoryNameRef = useRef<HTMLInputElement>(null);
   const sampleLinkRef = useRef<HTMLInputElement>(null);
 
@@ -66,8 +116,36 @@ export default function CaptureForm(): ReactElement {
     () => [...categories, ...customCategories],
     [categories, customCategories],
   );
+  const categoryOptions = useMemo<Array<CustomSelectOption>>(
+    () => allCategories.map((category) => ({ value: category.id, label: category.label })),
+    [allCategories],
+  );
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const visibleSavedLinks = useMemo(() => {
+    const query = linkSearch.trim().toLocaleLowerCase();
+    return savedLinks
+      .filter((link) => linkFilter === "all" || link.categoryId === linkFilter)
+      .filter((link) => {
+        if (!query) return true;
+        return [link.url, link.domain, link.categoryLabel]
+          .some((value) => value.toLocaleLowerCase().includes(query));
+      })
+      .sort((left, right) => {
+        const difference = Date.parse(right.updatedAt) - Date.parse(left.updatedAt);
+        return linkSort === "newest" ? difference : -difference;
+      });
+  }, [linkFilter, linkSearch, linkSort, savedLinks]);
+
+  const visibleCategories = useMemo(() => {
+    const query = categorySearch.trim().toLocaleLowerCase();
+    if (!query) return allCategories;
+    return allCategories.filter((category) =>
+      [category.label, ...category.examples]
+        .some((value) => value.toLocaleLowerCase().includes(query)),
+    );
+  }, [allCategories, categorySearch]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     if (!url.trim()) {
       setError("Enter a link.");
@@ -77,31 +155,64 @@ export default function CaptureForm(): ReactElement {
     setError("");
     setResult(null);
     setIsEditing(false);
-
-    const sessionRule = findSessionRule(url.trim(), customDomainRules);
-    if (sessionRule) {
-      const category = allCategories.find(
-        (candidate) => candidate.id === sessionRule.categoryId,
-      );
-      const parsed = parseUrl(url.trim());
-      if (category && parsed) {
-        setResult(customResult(category, parsed));
-        setSelectedCategory(category.id);
-        return;
-      }
+    setIsSavingLink(true);
+    try {
+      const saved = await requestData<{ link: SavedLink }>("/api/links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+      setSavedLinks((currentLinks) => [
+        saved.link,
+        ...currentLinks.filter((candidate) => candidate.id !== saved.link.id),
+      ]);
+      setResult(savedLinkResult(saved.link));
+      setSelectedCategory(saved.link.categoryId === "unknown" ? "" : saved.link.categoryId);
+      setIsEditing(saved.link.categoryId === "unknown");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save this link.");
+    } finally {
+      setIsSavingLink(false);
     }
-
-    const categorized = categorizeUrl(url.trim());
-    if (!categorized.is_valid) {
-      setError("Enter a valid HTTP(S) URL or bare domain.");
-      return;
-    }
-    setResult(categorized);
-    setSelectedCategory(categorized.category === "unknown" ? "" : categorized.category);
-    setIsEditing(categorized.category === "unknown");
   };
 
-  const handleOverride = (): void => {
+  const applyCategoryToSavedDomain = (
+    domain: string,
+    category: CategorySummary,
+  ): void => {
+    setSavedLinks((currentLinks) => currentLinks.map((link) =>
+      link.ruleDomain === domain
+        ? {
+            ...link,
+            categoryId: category.id,
+            categoryLabel: category.label,
+            color: category.color,
+            updatedAt: new Date().toISOString(),
+          }
+        : link,
+    ));
+    setCustomCategories((currentCategories) => currentCategories.map((candidate) => {
+      if (candidate.id !== category.id || candidate.domains.includes(domain)) return candidate;
+      return {
+        ...candidate,
+        domains: [...candidate.domains, domain],
+        domain_count: candidate.domain_count + 1,
+        examples: [...candidate.examples, domain],
+      };
+    }));
+  };
+
+  const saveRule = async (
+    sampleLink: string,
+    categoryId: string,
+  ): Promise<SessionDomainRule> =>
+    requestData<SessionDomainRule>("/api/rules", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sampleLink, categoryId }),
+    });
+
+  const handleOverride = async (): Promise<void> => {
     if (!result || !selectedCategory) return;
     setError("");
 
@@ -112,12 +223,21 @@ export default function CaptureForm(): ReactElement {
       return;
     }
 
-    setCustomDomainRules((currentRules) => [
-      ...currentRules.filter((rule) => rule.domain !== parsed.ruleDomain),
-      { domain: parsed.ruleDomain, categoryId: category.id },
-    ]);
-    setResult(customResult(category, parsed));
-    setIsEditing(false);
+    setIsSaving(true);
+    try {
+      const rule = await saveRule(result.domain, category.id);
+      setCustomDomainRules((currentRules) => [
+        ...currentRules.filter((candidate) => candidate.domain !== rule.domain),
+        rule,
+      ]);
+      applyCategoryToSavedDomain(rule.domain, category);
+      setResult(customResult(category, parsed));
+      setIsEditing(false);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save this change.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReset = (): void => {
@@ -137,9 +257,9 @@ export default function CaptureForm(): ReactElement {
     setIsCategoryFormOpen(false);
   };
 
-  const handleAssignExistingCategory = (
+  const handleAssignExistingCategory = async (
     event: FormEvent<HTMLFormElement>,
-  ): void => {
+  ): Promise<void> => {
     event.preventDefault();
     setCategoryError("");
 
@@ -158,52 +278,81 @@ export default function CaptureForm(): ReactElement {
       return;
     }
 
-    const rule = { domain: parsed.ruleDomain, categoryId: category.id };
-    setCustomDomainRules((currentRules) => [
-      ...currentRules.filter((candidate) => candidate.domain !== rule.domain),
-      rule,
-    ]);
-    setUrl(customSampleLink.trim());
-    setResult(customResult(category, parsed));
-    setSelectedCategory(category.id);
-    setIsEditing(false);
-    resetCategoryForm();
+    setIsSaving(true);
+    try {
+      const rule = await saveRule(customSampleLink, category.id);
+      setCustomDomainRules((currentRules) => [
+        ...currentRules.filter((candidate) => candidate.domain !== rule.domain),
+        rule,
+      ]);
+      applyCategoryToSavedDomain(rule.domain, category);
+      setUrl(customSampleLink.trim());
+      setResult(customResult(category, parsed));
+      setSelectedCategory(category.id);
+      setIsEditing(false);
+      resetCategoryForm();
 
-    window.requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>(".capture-result")?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
-        block: "center",
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>(".capture-result")?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "center",
+        });
       });
-    });
+    } catch (saveError) {
+      setCategoryError(
+        saveError instanceof Error ? saveError.message : "Could not save this assignment.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const commitCustomCategory = (
-    category: CustomCategory,
-    rule: SessionDomainRule,
+  const commitCustomCategory = async (
+    name: string,
     parsed: ParsedUrl,
     sampleLink: string,
-  ): void => {
-    setCustomCategories((currentCategories) => [...currentCategories, category]);
-    setCustomDomainRules((currentRules) => [
-      ...currentRules.filter((candidate) => candidate.domain !== rule.domain),
-      rule,
-    ]);
-    setUrl(sampleLink);
-    setResult(customResult(category, parsed));
-    setSelectedCategory(category.id);
-    setIsEditing(false);
-    resetCategoryForm();
-
-    window.requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>(".capture-result")?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
-        block: "center",
+  ): Promise<void> => {
+    setIsSaving(true);
+    setCategoryError("");
+    try {
+      const created = await requestData<{
+        category: CustomCategory;
+        rule: SessionDomainRule;
+      }>("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, sampleLink }),
       });
-    });
+      setCustomCategories((currentCategories) => [...currentCategories, created.category]);
+      setCustomDomainRules((currentRules) => [
+        ...currentRules.filter((candidate) => candidate.domain !== created.rule.domain),
+        created.rule,
+      ]);
+      applyCategoryToSavedDomain(created.rule.domain, created.category);
+      setUrl(sampleLink);
+      setResult(customResult(created.category, parsed));
+      setSelectedCategory(created.category.id);
+      setIsEditing(false);
+      resetCategoryForm();
+
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>(".capture-result")?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "center",
+        });
+      });
+    } catch (saveError) {
+      setPendingConflict(null);
+      setCategoryError(
+        saveError instanceof Error ? saveError.message : "Could not save this category.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCreateCategory = (event: FormEvent<HTMLFormElement>): void => {
@@ -238,15 +387,14 @@ export default function CaptureForm(): ReactElement {
       parsed.ruleDomain,
       customCategories.length,
     );
-    const rule = { domain: parsed.ruleDomain, categoryId: category.id };
     const existingCustomRule = customDomainRules.find(
       (candidate) => candidate.domain === parsed.ruleDomain,
     );
 
     let existingLabel = existingCustomRule
-      ? customCategories.find(
+      ? allCategories.find(
           (candidate) => candidate.id === existingCustomRule.categoryId,
-        )?.label ?? "another custom category"
+        )?.label ?? "another category"
       : "";
 
     if (!existingLabel) {
@@ -258,8 +406,7 @@ export default function CaptureForm(): ReactElement {
 
     if (existingLabel) {
       setPendingConflict({
-        category,
-        rule,
+        name: category.label,
         parsed,
         sampleLink: customSampleLink.trim(),
         existingLabel,
@@ -267,17 +414,94 @@ export default function CaptureForm(): ReactElement {
       return;
     }
 
-    commitCustomCategory(category, rule, parsed, customSampleLink.trim());
+    void commitCustomCategory(normalizedName, parsed, customSampleLink.trim());
   };
 
   const handleConfirmConflict = (): void => {
     if (!pendingConflict) return;
-    commitCustomCategory(
-      pendingConflict.category,
-      pendingConflict.rule,
+    void commitCustomCategory(
+      pendingConflict.name,
       pendingConflict.parsed,
       pendingConflict.sampleLink,
     );
+  };
+
+  const handleCreateCategoryFromResult = (): void => {
+    setCategoryMode("new");
+    setCustomCategoryName("");
+    setCustomSampleLink(url.trim());
+    setCategoryError("");
+    setPendingConflict(null);
+    setIsCategoryFormOpen(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById("custom-category-form")?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "center",
+      });
+      categoryNameRef.current?.focus();
+    });
+  };
+
+  const handleDeleteLink = async (id: string): Promise<void> => {
+    setDeletingLink(id);
+    setLinkError("");
+    try {
+      const response = await fetch(`/api/links/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Could not remove this link. Try again.");
+      setSavedLinks((currentLinks) => currentLinks.filter((link) => link.id !== id));
+      setPendingDeleteLink(null);
+    } catch (deleteError) {
+      setLinkError(
+        deleteError instanceof Error ? deleteError.message : "Could not remove this link.",
+      );
+    } finally {
+      setDeletingLink(null);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: string): Promise<void> => {
+    setDeletingCategory(categoryId);
+    setCategoryDirectoryError("");
+    try {
+      const response = await fetch(`/api/categories/${categoryId}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Could not delete this category. Try again.");
+
+      setCustomCategories((currentCategories) =>
+        currentCategories.filter((category) => category.id !== categoryId),
+      );
+      setCustomDomainRules((currentRules) =>
+        currentRules.filter((rule) => rule.categoryId !== categoryId),
+      );
+      setSavedLinks((currentLinks) => currentLinks.map((link) => {
+        if (link.categoryId !== categoryId) return link;
+        const fallback = categorizeUrl(link.url);
+        return {
+          ...link,
+          categoryId: fallback.category,
+          categoryLabel: fallback.category_label,
+          color: fallback.color,
+          updatedAt: new Date().toISOString(),
+        };
+      }));
+      if (result?.category === categoryId) {
+        const fallback = categorizeUrl(url);
+        setResult(fallback);
+        setSelectedCategory(fallback.category === "unknown" ? "" : fallback.category);
+        setIsEditing(fallback.category === "unknown");
+      }
+      if (selectedCategory === categoryId) setSelectedCategory("");
+      if (existingCategoryId === categoryId) setExistingCategoryId("");
+      if (linkFilter === categoryId) setLinkFilter("all");
+      setPendingDeleteCategory(null);
+    } catch (deleteError) {
+      setCategoryDirectoryError(
+        deleteError instanceof Error ? deleteError.message : "Could not delete this category.",
+      );
+    } finally {
+      setDeletingCategory(null);
+    }
   };
 
   return (
@@ -302,7 +526,9 @@ export default function CaptureForm(): ReactElement {
               placeholder="https://"
               autoFocus
             />
-            <button type="submit">Add link</button>
+            <button type="submit" disabled={isSavingLink}>
+              {isSavingLink ? "Saving" : "Add link"}
+            </button>
           </div>
         </form>
 
@@ -330,25 +556,37 @@ export default function CaptureForm(): ReactElement {
               </div>
             ) : (
               <div className="category-editor">
-                <label htmlFor="capture-category">Category</label>
+                <span className="category-editor-label">Category</span>
                 <div>
-                  <select
+                  <CustomSelect
                     id="capture-category"
                     value={selectedCategory}
-                    onChange={(event) => setSelectedCategory(event.target.value)}
-                  >
-                    <option value="">Choose category</option>
-                    {allCategories.map((category) => (
-                      <option key={category.id} value={category.id}>{category.label}</option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleOverride}
-                    disabled={!selectedCategory}
-                  >
-                    Save
-                  </button>
+                    onChange={setSelectedCategory}
+                    options={categoryOptions}
+                    label="Category"
+                    placeholder="Choose category"
+                    searchable
+                    disabled={isSaving}
+                  />
+                  <div className="category-editor-actions">
+                    <button
+                      type="button"
+                      onClick={() => void handleOverride()}
+                      disabled={!selectedCategory || isSaving}
+                    >
+                      {isSaving ? "Saving" : "Save"}
+                    </button>
+                    {result.category === "unknown" && (
+                      <button
+                        className="category-new-button"
+                        type="button"
+                        onClick={handleCreateCategoryFromResult}
+                        disabled={isSaving}
+                      >
+                        New category
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -357,11 +595,107 @@ export default function CaptureForm(): ReactElement {
         </div>
       </section>
 
+      <section className="saved-links" aria-labelledby="saved-links-title">
+        <header className="saved-links-heading">
+          <div>
+            <h2 id="saved-links-title">Saved links</h2>
+            <span>{savedLinks.length}</span>
+          </div>
+          <div className="saved-links-controls">
+            <label className="saved-links-search">
+              <span>Search</span>
+              <input
+                type="search"
+                value={linkSearch}
+                onChange={(event) => setLinkSearch(event.target.value)}
+                placeholder="Search links"
+              />
+            </label>
+            <div className="saved-links-control">
+              <span>Category</span>
+              <CustomSelect
+                id="saved-links-category"
+                value={linkFilter}
+                onChange={setLinkFilter}
+                options={[{ value: "all", label: "All categories" }, ...categoryOptions]}
+                label="Filter by category"
+                searchable
+              />
+            </div>
+            <div className="saved-links-control">
+              <span>Order</span>
+              <CustomSelect
+                id="saved-links-order"
+                value={linkSort}
+                onChange={(value) => setLinkSort(value as "newest" | "oldest")}
+                options={[
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                ]}
+                label="Sort saved links"
+              />
+            </div>
+          </div>
+        </header>
+
+        <div className="saved-links-feedback" aria-live="polite">
+          {linkError && <p role="alert">{linkError}</p>}
+        </div>
+
+        {visibleSavedLinks.length ? (
+          <div className="saved-link-list">
+            {visibleSavedLinks.map((link) => (
+              <article className="saved-link-row" key={link.id}>
+                <i style={{ "--link-color": link.color } as CSSProperties} />
+                <div className="saved-link-address">
+                  <a href={link.normalizedUrl} target="_blank" rel="noreferrer">
+                    {link.domain}
+                  </a>
+                  <span>{link.url}</span>
+                </div>
+                <span className="saved-link-category">{link.categoryLabel}</span>
+                <div className="saved-link-actions">
+                  {pendingDeleteLink === link.id ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteLink(link.id)}
+                        disabled={deletingLink === link.id}
+                      >
+                        {deletingLink === link.id ? "Removing" : "Delete"}
+                      </button>
+                      <button type="button" onClick={() => setPendingDeleteLink(null)}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => setPendingDeleteLink(link.id)}>
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="saved-links-empty">
+            {savedLinks.length ? "No links in this view." : "No saved links yet."}
+          </p>
+        )}
+      </section>
+
       <section className="product-categories" aria-labelledby="categories-title">
         <header className="product-categories-heading">
           <h2 id="categories-title">Categories</h2>
-          <div>
-            <span>{allCategories.length} supported</span>
+          <div className="product-categories-tools">
+            <input
+              type="search"
+              value={categorySearch}
+              onChange={(event) => setCategorySearch(event.target.value)}
+              placeholder="Search categories"
+              aria-label="Search categories"
+            />
+            <span>{visibleCategories.length} shown</span>
             <button
               type="button"
               aria-expanded={isCategoryFormOpen}
@@ -376,6 +710,10 @@ export default function CaptureForm(): ReactElement {
             </button>
           </div>
         </header>
+
+        <div className="category-directory-feedback" aria-live="polite">
+          {categoryDirectoryError && <p role="alert">{categoryDirectoryError}</p>}
+        </div>
 
         {isCategoryFormOpen && (
           <form
@@ -423,24 +761,24 @@ export default function CaptureForm(): ReactElement {
                     onChange={(event) => setCustomCategoryName(event.target.value)}
                     minLength={2}
                     maxLength={40}
-                    disabled={Boolean(pendingConflict)}
+                    disabled={Boolean(pendingConflict) || isSaving}
                     autoFocus
                   />
                 </label>
               ) : (
-                <label>
+                <div className="custom-category-field">
                   <span>Category</span>
-                  <select
+                  <CustomSelect
+                    id="existing-category"
                     value={existingCategoryId}
-                    onChange={(event) => setExistingCategoryId(event.target.value)}
-                    autoFocus
-                  >
-                    <option value="">Choose category</option>
-                    {allCategories.map((category) => (
-                      <option key={category.id} value={category.id}>{category.label}</option>
-                    ))}
-                  </select>
-                </label>
+                    onChange={setExistingCategoryId}
+                    options={categoryOptions}
+                    label="Category"
+                    placeholder="Choose category"
+                    searchable
+                    disabled={isSaving}
+                  />
+                </div>
               )}
               <label>
                 <span>Sample link</span>
@@ -451,7 +789,7 @@ export default function CaptureForm(): ReactElement {
                   value={customSampleLink}
                   onChange={(event) => setCustomSampleLink(event.target.value)}
                   placeholder="https://example.com"
-                  disabled={Boolean(pendingConflict)}
+                  disabled={Boolean(pendingConflict) || isSaving}
                 />
               </label>
             </div>
@@ -461,27 +799,36 @@ export default function CaptureForm(): ReactElement {
             {pendingConflict ? (
               <div className="category-conflict" role="status">
                 <p>
-                  {pendingConflict.rule.domain} is currently assigned to {pendingConflict.existingLabel}.
-                  Use {pendingConflict.category.label} instead for this session?
+                  {pendingConflict.parsed.ruleDomain} is currently assigned to {pendingConflict.existingLabel}.
+                  Use {pendingConflict.name} instead?
                 </p>
                 <div>
-                  <button type="button" onClick={handleConfirmConflict}>Use new category</button>
-                  <button type="button" onClick={() => setPendingConflict(null)}>Keep current</button>
+                  <button type="button" onClick={handleConfirmConflict} disabled={isSaving}>
+                    {isSaving ? "Saving" : "Use new category"}
+                  </button>
+                  <button type="button" onClick={() => setPendingConflict(null)} disabled={isSaving}>
+                    Keep current
+                  </button>
                 </div>
               </div>
             ) : (
               <div className="custom-category-actions">
-                <button type="submit">
-                  {categoryMode === "existing" ? "Assign category" : "Create category"}
+                <button type="submit" disabled={isSaving}>
+                  {isSaving
+                    ? "Saving"
+                    : categoryMode === "existing"
+                      ? "Assign category"
+                      : "Create category"}
                 </button>
-                <button type="button" onClick={resetCategoryForm}>Cancel</button>
+                <button type="button" onClick={resetCategoryForm} disabled={isSaving}>Cancel</button>
               </div>
             )}
           </form>
         )}
 
+        {visibleCategories.length ? (
         <div className="product-category-grid">
-          {allCategories.map((category, index) => (
+          {visibleCategories.map((category, index) => (
             <article
               className={`product-category-card${category.isCustom ? " is-custom" : ""}`}
               key={category.id}
@@ -500,9 +847,35 @@ export default function CaptureForm(): ReactElement {
                   <code key={domain}>{domain}</code>
                 ))}
               </div>
+              {category.isCustom && (
+                <div className="category-card-actions">
+                  {pendingDeleteCategory === category.id ? (
+                    <>
+                      <span>Delete category?</span>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteCategory(category.id)}
+                        disabled={deletingCategory === category.id}
+                      >
+                        {deletingCategory === category.id ? "Deleting" : "Delete"}
+                      </button>
+                      <button type="button" onClick={() => setPendingDeleteCategory(null)}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => setPendingDeleteCategory(category.id)}>
+                      Delete
+                    </button>
+                  )}
+                </div>
+              )}
             </article>
           ))}
         </div>
+        ) : (
+          <p className="category-directory-empty">No categories found.</p>
+        )}
       </section>
     </>
   );
