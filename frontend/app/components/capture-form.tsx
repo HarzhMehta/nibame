@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, FormEvent, ReactElement } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { SavedLink } from "../lib/link-types";
 import {
@@ -18,6 +18,7 @@ import {
   type SessionDomainRule,
 } from "../lib/url-categorizer";
 import CustomSelect, { type CustomSelectOption } from "./custom-select";
+import LinkHome from "./link-home";
 
 interface CaptureFormProps {
   initialCustomCategories: Array<CustomCategory>;
@@ -127,7 +128,14 @@ export default function CaptureForm({
       .filter((link) => linkFilter === "all" || link.categoryId === linkFilter)
       .filter((link) => {
         if (!query) return true;
-        return [link.url, link.domain, link.categoryLabel]
+        return [
+          link.url,
+          link.domain,
+          link.title,
+          link.description ?? "",
+          link.sourceName,
+          link.categoryLabel,
+        ]
           .some((value) => value.toLocaleLowerCase().includes(query));
       })
       .sort((left, right) => {
@@ -135,6 +143,26 @@ export default function CaptureForm({
         return linkSort === "newest" ? difference : -difference;
       });
   }, [linkFilter, linkSearch, linkSort, savedLinks]);
+
+  const hasPendingMetadata = savedLinks.some(
+    (link) => link.metadataStatus === "pending" || link.metadataStatus === "processing",
+  );
+
+  useEffect(() => {
+    if (!hasPendingMetadata) return;
+    const timer = window.setInterval(() => {
+      void requestData<{ links: Array<SavedLink> }>("/api/links", { method: "GET" })
+        .then((payload) => setSavedLinks(payload.links))
+        .catch(() => undefined);
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [hasPendingMetadata]);
+
+  const handleLinkUpdate = (updatedLink: SavedLink): void => {
+    setSavedLinks((currentLinks) =>
+      currentLinks.map((link) => link.id === updatedLink.id ? updatedLink : link),
+    );
+  };
 
   const visibleCategories = useMemo(() => {
     const query = categorySearch.trim().toLocaleLowerCase();
@@ -595,10 +623,12 @@ export default function CaptureForm({
         </div>
       </section>
 
+      <LinkHome links={savedLinks} onLinkUpdate={handleLinkUpdate} />
+
       <section className="saved-links" aria-labelledby="saved-links-title">
         <header className="saved-links-heading">
           <div>
-            <h2 id="saved-links-title">Saved links</h2>
+            <h2 id="saved-links-title">Library</h2>
             <span>{savedLinks.length}</span>
           </div>
           <div className="saved-links-controls">
@@ -649,9 +679,9 @@ export default function CaptureForm({
                 <i style={{ "--link-color": link.color } as CSSProperties} />
                 <div className="saved-link-address">
                   <a href={link.normalizedUrl} target="_blank" rel="noreferrer">
-                    {link.domain}
+                    {link.title}
                   </a>
-                  <span>{link.url}</span>
+                  <span>{link.sourceName} · {link.url}</span>
                 </div>
                 <span className="saved-link-category">{link.categoryLabel}</span>
                 <div className="saved-link-actions">

@@ -1,10 +1,34 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import { getCurrentUser } from "../../lib/auth";
-import { LinkError, saveUserLink } from "../../lib/user-links";
+import { enrichUserLink, getUserLinks, LinkError, saveUserLink } from "../../lib/user-links";
+
+export const runtime = "nodejs";
+export const maxDuration = 15;
 
 interface LinkRequestBody {
   url?: unknown;
+}
+
+/** Return the authenticated user's current link library. */
+export async function GET(): Promise<NextResponse> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "Sign in to continue." } },
+      { status: 401 },
+    );
+  }
+  const links = await getUserLinks(user.id);
+  for (const link of links
+    .filter(
+      (candidate) =>
+        candidate.metadataStatus === "pending" || candidate.metadataStatus === "processing",
+    )
+    .slice(0, 4)) {
+    after(() => enrichUserLink(user.id, link.id));
+  }
+  return NextResponse.json({ data: { links } });
 }
 
 /** Categorize and persist one link for the authenticated user. */
@@ -21,6 +45,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const url = typeof body?.url === "string" ? body.url : "";
   try {
     const link = await saveUserLink(user.id, url);
+    after(() => enrichUserLink(user.id, link.id));
     return NextResponse.json({ data: { link } }, { status: 201 });
   } catch (error) {
     if (error instanceof LinkError) {
