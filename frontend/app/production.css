@@ -183,12 +183,6 @@ select:focus-visible {
   letter-spacing: -0.05em;
 }
 
-.auth-heading p {
-  margin: 0.7rem 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
 .auth-form {
   display: grid;
   gap: 0.85rem;
@@ -223,10 +217,38 @@ select:focus-visible {
 }
 
 .auth-feedback p {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   margin: 0;
-  color: #ff93a1;
+  color: var(--muted);
   font-family: var(--font-mono);
   font-size: 0.66rem;
+}
+
+.auth-feedback p > i {
+  width: 0.42rem;
+  height: 0.42rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.auth-feedback.is-progress p {
+  color: var(--blue);
+}
+
+.auth-feedback.is-success p {
+  color: #55d6b0;
+}
+
+.auth-feedback.is-error p {
+  color: #ff93a1;
+}
+
+.auth-mode button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .auth-submit {
