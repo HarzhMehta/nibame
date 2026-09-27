@@ -28,6 +28,15 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
   line-height: 1.55;
+  overscroll-behavior-y: none;
+}
+
+@supports (min-height: 100dvh) {
+  body,
+  .product-shell,
+  .auth-page {
+    min-height: 100dvh;
+  }
 }
 
 a {
@@ -62,7 +71,11 @@ select:focus-visible {
   align-items: center;
   justify-content: space-between;
   min-height: 4.5rem;
-  padding: 0 clamp(1rem, 4vw, 2.5rem);
+  padding:
+    env(safe-area-inset-top)
+    max(clamp(1rem, 4vw, 2.5rem), env(safe-area-inset-right))
+    0
+    max(clamp(1rem, 4vw, 2.5rem), env(safe-area-inset-left));
   border-bottom: 1px solid var(--line);
 }
 
@@ -127,7 +140,11 @@ select:focus-visible {
   display: grid;
   min-height: 100vh;
   place-items: center;
-  padding: 6rem 1rem 2rem;
+  padding:
+    max(6rem, calc(env(safe-area-inset-top) + 5rem))
+    max(1rem, env(safe-area-inset-right))
+    max(2rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
   background:
     radial-gradient(circle at 50% 20%, rgba(114, 167, 255, 0.08), transparent 26rem),
     var(--page);
@@ -265,6 +282,39 @@ select:focus-visible {
 .auth-submit:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.mobile-share-card > span {
+  color: var(--blue);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
+.mobile-share-card h1 {
+  margin: 0.75rem 0 0;
+  font-size: clamp(2rem, 8vw, 2.8rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.mobile-share-card p {
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.mobile-share-card button {
+  width: 100%;
+  min-height: 3.25rem;
+  margin-top: 1.25rem;
+  border: 0;
+  background: var(--ink);
+  color: var(--page);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .capture-page {
@@ -1437,6 +1487,18 @@ select:focus-visible {
     padding: 0 1rem;
   }
 
+  .product-account button,
+  .auth-mode button,
+  .capture-result-actions button,
+  .smart-link-actions a,
+  .smart-link-actions button,
+  .saved-link-actions button,
+  .product-categories-heading button,
+  .custom-category-actions button,
+  .category-conflict button {
+    min-height: 3rem;
+  }
+
   .product-account > span {
     display: none;
   }
@@ -1498,6 +1560,7 @@ select:focus-visible {
   .product-categories {
     width: calc(100% - 2rem);
     padding-top: 3rem;
+    padding-bottom: max(4rem, calc(env(safe-area-inset-bottom) + 2rem));
   }
 
   .link-home {

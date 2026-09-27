@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactElement, ReactNode } from "react";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
@@ -12,6 +12,13 @@ import "./production.css";
 export const metadata: Metadata = {
   title: "nibame",
   description: "Save and organize links with nibame.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#07080a",
 };
 
 /** Render the nibame prototype document shell. */

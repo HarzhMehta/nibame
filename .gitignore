@@ -3,13 +3,14 @@
 **/node_modules/
 frontend/.next/
 frontend/out/
-frontend/.env.local
+
+# Environment files
+**/.env
+**/.env.local
+**/.env.*.local
+!**/.env.example
 
 # Local tooling
 .DS_Store
 .idea/
 .vscode/
-
-# eeee en viiii :)
-**/.env/
-.env

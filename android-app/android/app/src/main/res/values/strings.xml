@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">nibame</string>
+    <string name="title_activity_main">nibame</string>
+    <string name="package_name">com.harshmehta.nibame</string>
+    <string name="custom_url_scheme">com.harshmehta.nibame</string>
+</resources>

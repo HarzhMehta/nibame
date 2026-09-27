@@ -1,0 +1,19 @@
+{
+  "name": "nibame-android",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "android:sync": "cap sync android",
+    "android:open": "cap open android",
+    "android:run": "cap run android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.0.0",
+    "@capacitor/app": "8.0.0",
+    "@capacitor/core": "8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.0.0",
+    "typescript": "^5.9.0"
+  }
+}
