@@ -7,7 +7,8 @@
       "youtube.com", "youtu.be", "vimeo.com", "dailymotion.com", "twitch.tv",
       "netflix.com", "primevideo.com", "hotstar.com", "disneyplus.com", "hulu.com",
       "max.com", "peacocktv.com", "jiocinema.com", "zee5.com", "sonyliv.com",
-      "crunchyroll.com", "tubitv.com", "bilibili.com", "rumble.com", "kick.com", "vevo.com"
+      "crunchyroll.com", "tubitv.com", "bilibili.com", "rumble.com", "kick.com", "vevo.com",
+      "ted.com", "loom.com", "wistia.com", "vidyard.com"
     ]
   },
   "development_code": {
@@ -21,7 +22,10 @@
       "docker.com", "codepen.io", "codesandbox.io", "replit.com", "glitch.com",
       "leetcode.com", "hackerrank.com", "codeforces.com", "geeksforgeeks.org",
       "freecodecamp.org", "devdocs.io", "readthedocs.io", "kaggle.com", "huggingface.co",
-      "replicate.com", "vercel.com", "netlify.com", "cloudflare.com"
+      "replicate.com", "vercel.com", "netlify.com", "cloudflare.com",
+      "developer.mozilla.org", "react.dev", "nextjs.org", "nodejs.org", "docs.python.org",
+      "python.org", "rust-lang.org", "docs.rs", "go.dev", "pkg.go.dev", "deno.com",
+      "bun.sh", "supabase.com", "firebase.google.com", "aws.amazon.com", "azure.microsoft.com"
     ]
   },
   "articles_blogs": {
@@ -31,7 +35,8 @@
     "domains": [
       "medium.com", "substack.com", "dev.to", "hashnode.com", "wordpress.com",
       "blogger.com", "ghost.io", "mirror.xyz", "telegra.ph", "beehiiv.com",
-      "buttondown.email", "write.as", "livejournal.com"
+      "buttondown.email", "write.as", "livejournal.com", "hackernoon.com",
+      "towardsdatascience.com", "smashingmagazine.com", "css-tricks.com", "infoq.com"
     ]
   },
   "social": {
@@ -117,7 +122,7 @@
       "spotify.com", "open.spotify.com", "music.apple.com", "music.youtube.com",
       "soundcloud.com", "bandcamp.com", "mixcloud.com", "audiomack.com", "gaana.com",
       "jiosaavn.com", "wynk.in", "audible.com", "pocketcasts.com", "overcast.fm",
-      "podcasts.apple.com"
+      "podcasts.apple.com", "deezer.com", "tidal.com", "podbean.com", "castbox.fm"
     ]
   },
   "shopping_marketplaces": {
@@ -128,7 +133,8 @@
       "amazon.com", "amazon.in", "amazon.co.uk", "amazon.de", "amazon.co.jp", "ebay.com",
       "flipkart.com", "walmart.com", "etsy.com", "aliexpress.com", "temu.com", "myntra.com",
       "ajio.com", "meesho.com", "snapdeal.com", "ikea.com", "target.com", "bestbuy.com",
-      "shopify.com"
+      "shopify.com", "croma.com", "reliancedigital.in", "nykaa.com", "tatacliq.com",
+      "decathlon.in"
     ]
   },
   "finance_payments": {
@@ -148,7 +154,8 @@
     "domains": [
       "notion.so", "notion.site", "trello.com", "asana.com", "clickup.com", "monday.com",
       "airtable.com", "miro.com", "linear.app", "atlassian.com", "jira.com", "calendly.com",
-      "evernote.com", "todoist.com", "ticktick.com", "obsidian.md", "loom.com"
+      "evernote.com", "todoist.com", "ticktick.com", "obsidian.md", "raindrop.io",
+      "mymind.com", "readwise.io", "are.na", "fabric.so", "cosmos.so"
     ]
   },
   "cloud_documents": {
@@ -187,7 +194,9 @@
     "description": "Maps, transport, accommodation, travel planning, and local discovery.",
     "color": "#62d6e8",
     "domains": [
-      "maps.google.com", "tripadvisor.com", "booking.com", "airbnb.com", "makemytrip.com",
+      "maps.google.com", "maps.apple.com", "openstreetmap.org", "waze.com", "here.com",
+      "mapquest.com", "maps.me", "alltrails.com", "komoot.com", "tripadvisor.com",
+      "booking.com", "airbnb.com", "makemytrip.com",
       "goibibo.com", "cleartrip.com", "expedia.com", "kayak.com", "skyscanner.com",
       "uber.com", "olacabs.com", "redbus.in", "irctc.co.in", "ixigo.com", "rome2rio.com"
     ]
@@ -245,6 +254,51 @@
     "domains": [
       "gov.in", "india.gov.in", "uidai.gov.in", "incometax.gov.in", "passportindia.gov.in",
       "digilocker.gov.in", "usa.gov", "data.gov"
+    ]
+  },
+  "sports": {
+    "label": "Sports",
+    "description": "Scores, teams, leagues, events, and sports coverage.",
+    "color": "#5da9ff",
+    "domains": [
+      "espn.com", "espncricinfo.com", "cricbuzz.com", "nba.com", "nfl.com", "nhl.com",
+      "mlb.com", "fifa.com", "uefa.com", "premierleague.com", "formula1.com", "olympics.com"
+    ]
+  },
+  "events_tickets": {
+    "label": "Events & Tickets",
+    "description": "Events, meetups, shows, conferences, and ticketing.",
+    "color": "#ff9d57",
+    "domains": [
+      "eventbrite.com", "meetup.com", "ticketmaster.com", "bookmyshow.com", "insider.in",
+      "dice.fm", "allevents.in", "lu.ma"
+    ]
+  },
+  "real_estate": {
+    "label": "Homes & Real Estate",
+    "description": "Property listings, rentals, homes, and real-estate research.",
+    "color": "#b69cff",
+    "domains": [
+      "zillow.com", "realtor.com", "redfin.com", "99acres.com", "magicbricks.com",
+      "housing.com", "nobroker.in", "rightmove.co.uk"
+    ]
+  },
+  "automotive": {
+    "label": "Automotive",
+    "description": "Cars, bikes, reviews, listings, and vehicle research.",
+    "color": "#ff7185",
+    "domains": [
+      "carwale.com", "cardekho.com", "bikewale.com", "zigwheels.com", "autocarindia.com",
+      "cars.com", "autotrader.com", "motortrend.com"
+    ]
+  },
+  "weather": {
+    "label": "Weather",
+    "description": "Forecasts, climate information, and weather maps.",
+    "color": "#62c8f5",
+    "domains": [
+      "weather.com", "accuweather.com", "windy.com", "wunderground.com", "meteoblue.com",
+      "weather.gov", "mausam.imd.gov.in"
     ]
   },
   "link_shortener": {

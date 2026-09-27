@@ -57,7 +57,10 @@ export interface CategorizationResult {
 const DOMAIN_PATH_RULES = [
   { domain: "linkedin.com", pattern: /^\/jobs(?:\/|$)/, category: "jobs_careers" },
   { domain: "google.com", pattern: /^\/maps(?:\/|$)/, category: "travel_places" },
+  { domain: "goo.gl", pattern: /^\/maps(?:\/|$)/, category: "travel_places" },
+  { domain: "apple.com", pattern: /^\/maps(?:\/|$)/, category: "travel_places" },
   { domain: "google.com", pattern: /^\/search(?:\/|$)/, category: "search_discovery" },
+  { domain: "eventbrite.com", pattern: /^\/e(?:\/|$)/, category: "events_tickets" },
 ] as const;
 
 const PATH_HINTS = [
@@ -133,6 +136,7 @@ export function parseUrl(input: string): ParsedUrl | null {
   }
 
   if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  if (url.username || url.password) return null;
 
   const hostname = stripPresentationPrefix(url.hostname);
   if (!hostname || /\s/.test(hostname)) return null;

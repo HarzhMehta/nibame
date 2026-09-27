@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import { getCurrentUser } from "../../lib/auth";
-import { saveUserLink } from "../../lib/user-links";
+import { enrichUserLink, saveUserLink } from "../../lib/user-links";
 import { parseUrl } from "../../lib/url-categorizer";
 
 function extractSharedUrl(values: Array<FormDataEntryValue | null>): string | null {
@@ -32,6 +32,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.redirect(loginUrl, 303);
   }
 
-  await saveUserLink(user.id, sharedUrl);
+  const link = await saveUserLink(user.id, sharedUrl);
+  after(() => enrichUserLink(user.id, link.id));
   return NextResponse.redirect(new URL("/", request.url), 303);
 }
