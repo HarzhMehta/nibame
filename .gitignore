@@ -1,11 +1,6 @@
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-.pytest_cache/
 
 # Next.js
-frontend/node_modules/
+**/node_modules/
 frontend/.next/
 frontend/out/
 frontend/.env.local
@@ -14,3 +9,7 @@ frontend/.env.local
 .DS_Store
 .idea/
 .vscode/
+
+# eeee en viiii :)
+**/.env/
+.env
