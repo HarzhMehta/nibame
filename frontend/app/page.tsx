@@ -6,15 +6,17 @@ import type { ReactElement } from "react";
 import CaptureForm from "./components/capture-form";
 import { getCurrentUser } from "./lib/auth";
 import { getUserLinks } from "./lib/user-links";
+import { getUserItems } from "./lib/user-items";
 import { getUserPreferences } from "./lib/user-preferences";
 
 /** Render the primary nibame capture surface. */
 export default async function Home(): Promise<ReactElement> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const [preferences, savedLinks] = await Promise.all([
+  const [preferences, savedLinks, savedItems] = await Promise.all([
     getUserPreferences(user.id),
     getUserLinks(user.id),
+    getUserItems(user.id),
   ]);
 
   return (
@@ -37,6 +39,7 @@ export default async function Home(): Promise<ReactElement> {
         initialCustomCategories={preferences.customCategories}
         initialCustomDomainRules={preferences.customDomainRules}
         initialSavedLinks={savedLinks}
+        initialItems={savedItems}
       />
     </main>
   );

@@ -46,6 +46,8 @@ async function ensureIndexes(database: Db): Promise<void> {
     database.collection("links").createIndex({ userId: 1, categoryId: 1, updatedAt: -1 }),
     database.collection("links").createIndex({ userId: 1, state: 1, updatedAt: -1 }),
     database.collection("links").createIndex({ userId: 1, intent: 1, updatedAt: -1 }),
+    database.collection("items").createIndex({ userId: 1, status: 1, updatedAt: -1 }),
+    database.collection("items").createIndex({ userId: 1, remindAt: 1 }),
   ]);
 }
 

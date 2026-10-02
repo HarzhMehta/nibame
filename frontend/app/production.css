@@ -345,6 +345,34 @@ select:focus-visible {
   margin-top: 2.25rem;
 }
 
+.capture-kind {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(5rem, 1fr));
+  margin-top: 1.75rem;
+  border: 1px solid var(--line);
+}
+
+.capture-kind button {
+  min-height: 2.65rem;
+  padding: 0 0.9rem;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  cursor: pointer;
+}
+
+.capture-kind button:last-child {
+  border-right: 0;
+}
+
+.capture-kind button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--page);
+}
+
 .capture-form > label,
 .category-editor-label {
   display: block;
@@ -366,23 +394,271 @@ select:focus-visible {
   box-shadow: 0 0 0 3px rgba(114, 167, 255, 0.08);
 }
 
-.capture-input-row input {
+.capture-input-row textarea {
   min-width: 0;
   min-height: 4rem;
-  padding: 0 1rem;
+  resize: vertical;
+  padding: 1.25rem 1rem;
   border: 0;
   outline: 0;
   background: transparent;
   color: var(--ink);
   font-family: var(--font-mono);
   font-size: 0.82rem;
+  line-height: 1.5;
 }
 
-.capture-input-row input::placeholder {
+.capture-input-row textarea::placeholder {
   color: var(--quiet);
 }
 
-.capture-input-row button,
+.capture-input-actions {
+  display: flex;
+  align-items: stretch;
+}
+
+.capture-input-actions > button,
+.voice-capture > button {
+  min-width: 7rem;
+  margin: 0.45rem;
+  border: 0;
+  background: var(--ink);
+  color: var(--page);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.voice-capture {
+  display: flex;
+  position: relative;
+}
+
+.voice-capture > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 5.7rem;
+  background: transparent;
+  color: var(--muted);
+}
+
+.voice-capture > button > i {
+  width: 0.65rem;
+  height: 0.9rem;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+}
+
+.voice-capture > button[aria-pressed="true"] {
+  color: var(--blue);
+}
+
+.voice-capture small {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  width: max-content;
+  color: #ff93a1;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+}
+
+.capture-reminder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.65rem;
+}
+
+.capture-reminder label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  cursor: pointer;
+}
+
+.capture-reminder label input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--blue);
+}
+
+.capture-reminder > input {
+  min-height: 2.65rem;
+  padding: 0 0.65rem;
+  border: 1px solid var(--line);
+  background: #101216;
+  color: var(--ink);
+  color-scheme: dark;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}
+
+.capture-feedback p.is-success {
+  color: #55d6b0;
+}
+
+.item-dashboard {
+  width: min(calc(100% - 2rem), 76rem);
+  margin: 1rem auto 0;
+  padding: clamp(3.5rem, 7vw, 5rem) 0 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.item-dashboard > header > span {
+  color: var(--blue);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.item-dashboard > header h2 {
+  max-width: 17ch;
+  margin: 0.45rem 0 0;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+}
+
+.item-dashboard-feedback {
+  min-height: 1.5rem;
+}
+
+.item-dashboard-feedback p {
+  margin: 0.5rem 0 0;
+  color: #ff93a1;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+
+.item-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.item-panel {
+  min-width: 0;
+  min-height: 12rem;
+  border: 1px solid var(--line);
+  background: #0d0f12;
+}
+
+.item-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3.4rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.item-panel > header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.item-panel > header span {
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+}
+
+.item-list {
+  display: grid;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.7rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.item-row:last-child {
+  border-bottom: 0;
+}
+
+.item-status-button {
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--blue);
+  cursor: pointer;
+}
+
+.item-note-mark {
+  width: 0.55rem;
+  height: 0.55rem;
+  margin: 0.6rem;
+  border-radius: 50%;
+  background: var(--blue);
+  opacity: 0.75;
+}
+
+.item-row p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.item-row small {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  text-transform: capitalize;
+}
+
+.item-row-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.item-row-actions button {
+  min-height: 1.9rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  cursor: pointer;
+}
+
+.item-row-actions button:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.item-panel-empty {
+  margin: 0;
+  padding: 2rem 1rem;
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+}
+
+.capture-input-actions > button,
 .category-editor-actions > button {
   min-width: 8rem;
   margin: 0.45rem;
@@ -398,8 +674,63 @@ select:focus-visible {
 .product-categories {
   width: min(calc(100% - 2rem), 76rem);
   margin: 1rem auto 0;
-  padding: clamp(3.5rem, 7vw, 6rem) 0 4rem;
+  padding: 1rem 0 4rem;
   border-top: 1px solid var(--line);
+}
+
+.category-directory-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 4rem;
+  padding: 0 0.25rem;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.category-directory-summary::-webkit-details-marker {
+  display: none;
+}
+
+.category-directory-summary > span {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.category-directory-summary > strong,
+.category-directory-summary > small {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+}
+
+.category-directory-summary > strong {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid var(--line);
+  place-items: center;
+}
+
+.category-directory-summary > small::after {
+  display: inline-block;
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-left: 0.65rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  content: "";
+  transform: translateY(-0.12rem) rotate(45deg);
+}
+
+.product-categories[open] .category-directory-summary > small::after {
+  transform: translateY(0.12rem) rotate(225deg);
+}
+
+.category-directory-content {
+  padding-top: 2rem;
 }
 
 .link-home {
@@ -1524,8 +1855,64 @@ select:focus-visible {
     margin-top: 1.75rem;
   }
 
+  .capture-kind {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .capture-input-row {
     grid-template-columns: 1fr;
+  }
+
+  .capture-input-actions {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    border-top: 1px solid var(--line);
+  }
+
+  .capture-input-actions > button,
+  .voice-capture > button {
+    min-height: 3.15rem;
+  }
+
+  .capture-reminder {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .capture-reminder > input {
+    width: 100%;
+  }
+
+  .item-dashboard {
+    width: calc(100% - 2rem);
+    padding-top: 3rem;
+  }
+
+  .item-panel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .item-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .item-row-actions {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  .item-row-actions button {
+    min-height: 2.75rem;
+  }
+
+  .category-directory-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .category-directory-summary > small {
+    grid-column: 1 / -1;
   }
 
   .capture-input-row button {

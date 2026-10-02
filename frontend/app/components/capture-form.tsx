@@ -4,6 +4,8 @@ import type { CSSProperties, FormEvent, ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { SavedLink } from "../lib/link-types";
+import type { UserItem, UserItemKind } from "../lib/item-types";
+import { scheduleItemReminder } from "../lib/mobile-capabilities";
 import {
   categorizeUrl,
   categoryNameExists,
@@ -18,12 +20,15 @@ import {
   type SessionDomainRule,
 } from "../lib/url-categorizer";
 import CustomSelect, { type CustomSelectOption } from "./custom-select";
+import ItemDashboard from "./item-dashboard";
 import LinkHome from "./link-home";
+import VoiceCaptureButton from "./voice-capture-button";
 
 interface CaptureFormProps {
   initialCustomCategories: Array<CustomCategory>;
   initialCustomDomainRules: Array<SessionDomainRule>;
   initialSavedLinks: Array<SavedLink>;
+  initialItems: Array<UserItem>;
 }
 
 interface PendingCategoryConflict {
@@ -81,8 +86,15 @@ export default function CaptureForm({
   initialCustomCategories,
   initialCustomDomainRules,
   initialSavedLinks,
+  initialItems,
 }: CaptureFormProps): ReactElement {
   const [url, setUrl] = useState("");
+  const [captureKind, setCaptureKind] = useState<"link" | UserItemKind>("link");
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderAt, setReminderAt] = useState("");
+  const [savedItems, setSavedItems] = useState(initialItems);
+  const [isSavingItem, setIsSavingItem] = useState(false);
+  const [itemFeedback, setItemFeedback] = useState("");
   const [result, setResult] = useState<CategorizationResult | null>(null);
   const categories = useMemo<Array<CategoryDefinition>>(() => getBuiltInCategories(), []);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -112,6 +124,7 @@ export default function CaptureForm({
   const [categoryDirectoryError, setCategoryDirectoryError] = useState("");
   const categoryNameRef = useRef<HTMLInputElement>(null);
   const sampleLinkRef = useRef<HTMLInputElement>(null);
+  const categoryDirectoryRef = useRef<HTMLDetailsElement>(null);
 
   const allCategories = useMemo(
     () => [...categories, ...customCategories],
@@ -173,8 +186,96 @@ export default function CaptureForm({
     );
   }, [allCategories, categorySearch]);
 
+  const handleCaptureTextChange = (value: string): void => {
+    const commands: Array<{
+      prefix: string;
+      kind: "link" | UserItemKind;
+      reminder: boolean;
+    }> = [
+      { prefix: "/link ", kind: "link", reminder: false },
+      { prefix: "/task ", kind: "task", reminder: false },
+      { prefix: "/note ", kind: "note", reminder: false },
+      { prefix: "/remind ", kind: "task", reminder: true },
+    ];
+    const command = commands.find((candidate) => value.toLocaleLowerCase().startsWith(candidate.prefix));
+    if (command) {
+      setCaptureKind(command.kind);
+      setReminderEnabled(command.reminder);
+      setUrl(value.slice(command.prefix.length));
+    } else {
+      setUrl(value);
+    }
+    setError("");
+    setItemFeedback("");
+  };
+
+  const handleCaptureKindChange = (kind: "link" | UserItemKind): void => {
+    setCaptureKind(kind);
+    setResult(null);
+    setIsEditing(false);
+    setError("");
+    setItemFeedback("");
+    if (kind === "link") {
+      setReminderEnabled(false);
+      setReminderAt("");
+    }
+  };
+
+  const saveTextItem = async (): Promise<void> => {
+    if (!url.trim()) {
+      setError(captureKind === "task" ? "Write a task." : "Write a note.");
+      return;
+    }
+    if (reminderEnabled && !reminderAt) {
+      setError("Choose when to be reminded.");
+      return;
+    }
+
+    setIsSavingItem(true);
+    setError("");
+    try {
+      const saved = await requestData<{ item: UserItem }>("/api/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: captureKind,
+          text: url.trim(),
+          remindAt: reminderEnabled ? new Date(reminderAt).toISOString() : undefined,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        }),
+      });
+      setSavedItems((current) => [saved.item, ...current]);
+      let nativeReminderScheduled = false;
+      try {
+        nativeReminderScheduled = await scheduleItemReminder(saved.item);
+      } catch {
+        nativeReminderScheduled = false;
+      }
+      setItemFeedback(
+        saved.item.remindAt
+          ? nativeReminderScheduled
+            ? "Saved. Android reminder scheduled."
+            : "Saved with reminder."
+          : captureKind === "task"
+            ? "Task saved."
+            : "Note saved.",
+      );
+      setUrl("");
+      setReminderEnabled(false);
+      setReminderAt("");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save this item.");
+    } finally {
+      setIsSavingItem(false);
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
+    if (captureKind !== "link") {
+      await saveTextItem();
+      return;
+    }
     if (!url.trim()) {
       setError("Enter a link.");
       return;
@@ -202,6 +303,16 @@ export default function CaptureForm({
     } finally {
       setIsSavingLink(false);
     }
+  };
+
+  const handleItemUpdate = (updatedItem: UserItem): void => {
+    setSavedItems((current) =>
+      current.map((item) => item.id === updatedItem.id ? updatedItem : item),
+    );
+  };
+
+  const handleItemDelete = (id: string): void => {
+    setSavedItems((current) => current.filter((item) => item.id !== id));
   };
 
   const applyCategoryToSavedDomain = (
@@ -461,6 +572,7 @@ export default function CaptureForm({
     setCategoryError("");
     setPendingConflict(null);
     setIsCategoryFormOpen(true);
+    if (categoryDirectoryRef.current) categoryDirectoryRef.current.open = true;
     window.requestAnimationFrame(() => {
       document.getElementById("custom-category-form")?.scrollIntoView({
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -537,31 +649,85 @@ export default function CaptureForm({
       <section className="capture-page" aria-labelledby="capture-title">
         <div className="capture-card">
         <header className="capture-heading">
-          <h1 id="capture-title">Add a link</h1>
-          <p>nibame sorts it automatically. Change the category whenever you need.</p>
+          <h1 id="capture-title">Capture anything.</h1>
+          <p>Links, tasks and notes.</p>
         </header>
 
+        <div className="capture-kind" role="group" aria-label="Capture type">
+          {(["link", "task", "note"] as const).map((kind) => (
+            <button
+              type="button"
+              key={kind}
+              aria-pressed={captureKind === kind}
+              onClick={() => handleCaptureKindChange(kind)}
+            >
+              {kind.charAt(0).toLocaleUpperCase() + kind.slice(1)}
+            </button>
+          ))}
+        </div>
+
         <form className="capture-form" onSubmit={handleSubmit}>
-          <label htmlFor="capture-url">Link</label>
+          <label htmlFor="capture-url">
+            {captureKind === "link" ? "Link" : captureKind === "task" ? "Task" : "Note"}
+          </label>
           <div className="capture-input-row">
-            <input
+            <textarea
               id="capture-url"
-              type="text"
-              inputMode="url"
-              autoComplete="url"
+              rows={captureKind === "note" ? 3 : 1}
+              inputMode={captureKind === "link" ? "url" : "text"}
               value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              placeholder="https://"
+              onChange={(event) => handleCaptureTextChange(event.target.value)}
+              placeholder={
+                captureKind === "link"
+                  ? "https://"
+                  : captureKind === "task"
+                    ? "What needs to be done?"
+                    : "Write a short note..."
+              }
               autoFocus
             />
-            <button type="submit" disabled={isSavingLink}>
-              {isSavingLink ? "Saving" : "Add link"}
-            </button>
+            <div className="capture-input-actions">
+              <VoiceCaptureButton
+                disabled={isSavingLink || isSavingItem}
+                onTranscript={(text) => setUrl((current) => current ? current + " " + text : text)}
+              />
+              <button type="submit" disabled={isSavingLink || isSavingItem}>
+                {isSavingLink || isSavingItem
+                  ? "Saving"
+                  : captureKind === "link"
+                    ? "Add link"
+                    : captureKind === "task"
+                      ? "Add task"
+                      : "Add note"}
+              </button>
+            </div>
           </div>
+
+          {captureKind !== "link" && (
+            <div className="capture-reminder">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={reminderEnabled}
+                  onChange={(event) => setReminderEnabled(event.target.checked)}
+                />
+                <span>Remind me</span>
+              </label>
+              {reminderEnabled && (
+                <input
+                  type="datetime-local"
+                  value={reminderAt}
+                  onChange={(event) => setReminderAt(event.target.value)}
+                  aria-label="Reminder date and time"
+                />
+              )}
+            </div>
+          )}
         </form>
 
         <div className="capture-feedback" aria-live="polite">
           {error && <p role="alert">{error}</p>}
+          {!error && itemFeedback && <p className="is-success" role="status">{itemFeedback}</p>}
         </div>
 
         {result && (
@@ -622,6 +788,12 @@ export default function CaptureForm({
         )}
         </div>
       </section>
+
+      <ItemDashboard
+        items={savedItems}
+        onUpdate={handleItemUpdate}
+        onDelete={handleItemDelete}
+      />
 
       <LinkHome links={savedLinks} onLinkUpdate={handleLinkUpdate} />
 
@@ -714,7 +886,13 @@ export default function CaptureForm({
         )}
       </section>
 
-      <section className="product-categories" aria-labelledby="categories-title">
+      <details className="product-categories" ref={categoryDirectoryRef}>
+        <summary className="category-directory-summary">
+          <span>Link categories</span>
+          <strong>{allCategories.length}</strong>
+          <small>Browse and manage</small>
+        </summary>
+        <div className="category-directory-content">
         <header className="product-categories-heading">
           <h2 id="categories-title">Categories</h2>
           <div className="product-categories-tools">
@@ -906,7 +1084,8 @@ export default function CaptureForm({
         ) : (
           <p className="category-directory-empty">No categories found.</p>
         )}
-      </section>
+        </div>
+      </details>
     </>
   );
 }
