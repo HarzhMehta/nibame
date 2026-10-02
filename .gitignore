@@ -4,6 +4,18 @@
 frontend/.next/
 frontend/out/
 
+# Python virtual environments
+**/venv/
+**/.venv/
+
+# Android and Gradle build output
+**/.gradle/
+**/build/
+**/captures/
+**/*.apk
+!android-app/releases/
+!android-app/releases/*.apk
+
 # Environment files
 **/.env
 **/.env.local
