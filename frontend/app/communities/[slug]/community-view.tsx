@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CSSProperties, FormEvent, ReactElement } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import CustomSelect, { type CustomSelectOption } from "../../components/custom-select";
 import type {
@@ -25,6 +25,7 @@ interface PostPageResponse {
     nextCursor?: string;
     post?: CommunityPost;
     imported?: { kind: CommunityPostKind; id: string };
+    description?: string;
   };
   error?: { message?: string };
 }
@@ -47,6 +48,9 @@ export default function CommunityView({
   const [filterCategory, setFilterCategory] = useState("all");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [isPosting, setIsPosting] = useState(false);
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState(initialCommunity.description);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -54,6 +58,7 @@ export default function CommunityView({
   const [editingCategory, setEditingCategory] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [importedIds, setImportedIds] = useState<Array<string>>([]);
+  const composerRef = useRef<HTMLFormElement>(null);
   const categoryOptions = useMemo<Array<CustomSelectOption>>(
     () => getBuiltInCategories().map((category) => ({
       value: category.id,
@@ -87,6 +92,18 @@ export default function CommunityView({
     return () => window.clearInterval(timer);
   }, [community.id, hasPending]);
 
+  useEffect(() => {
+    if (!isComposerOpen) return;
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setIsComposerOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    window.requestAnimationFrame(() => {
+      composerRef.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")?.focus();
+    });
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isComposerOpen]);
+
   const visiblePosts = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
     return posts.filter((post) => {
@@ -110,6 +127,7 @@ export default function CommunityView({
         isJoined: true,
         memberCount: current.memberCount + 1,
       }));
+      setIsComposerOpen(false);
       const postsResponse = await fetch("/api/communities/" + community.id + "/posts");
       const postsPayload = (await postsResponse.json()) as PostPageResponse;
       if (postsResponse.ok && postsPayload.data?.posts) {
@@ -136,6 +154,7 @@ export default function CommunityView({
         isJoined: false,
         memberCount: Math.max(0, current.memberCount - 1),
       }));
+      setIsComposerOpen(false);
     } catch (leaveError) {
       setError(leaveError instanceof Error ? leaveError.message : "Could not leave.");
     } finally {
@@ -171,6 +190,7 @@ export default function CommunityView({
       setText("");
       setCategoryId("");
       setSuccess(postKind === "link" ? "Link shared." : "Note shared.");
+      setIsComposerOpen(false);
     } catch (postError) {
       setError(postError instanceof Error ? postError.message : "Could not add this post.");
     } finally {
@@ -261,9 +281,38 @@ export default function CommunityView({
     }
   };
 
+  const saveDescription = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault();
+    setBusyId("community-description");
+    setError("");
+    try {
+      const response = await fetch("/api/communities/" + community.id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: descriptionDraft }),
+      });
+      const payload = (await response.json()) as PostPageResponse;
+      if (!response.ok || !payload.data?.description) {
+        throw new Error(payload.error?.message ?? "Could not update the description.");
+      }
+      setCommunity((current) => ({ ...current, description: payload.data!.description! }));
+      setDescriptionDraft(payload.data.description);
+      setIsEditingDescription(false);
+    } catch (descriptionError) {
+      setError(
+        descriptionError instanceof Error
+          ? descriptionError.message
+          : "Could not update the description.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <section className="community-view">
       <Link className="community-back" href="/communities">← Communities</Link>
+      <div className="community-sidebar">
       <header className="community-view-header">
         <div
           className="community-view-label"
@@ -273,7 +322,47 @@ export default function CommunityView({
           <span>{community.categoryLabel ?? "General"}</span>
         </div>
         <h1>{community.name}</h1>
-        <p>{community.description}</p>
+        {isEditingDescription ? (
+          <form className="community-description-editor" onSubmit={saveDescription}>
+            <textarea
+              value={descriptionDraft}
+              onChange={(event) => setDescriptionDraft(event.target.value)}
+              minLength={10}
+              maxLength={500}
+              rows={4}
+              aria-label="Community description"
+              autoFocus
+              required
+            />
+            <div>
+              <button type="submit" disabled={busyId === "community-description"}>
+                {busyId === "community-description" ? "Saving" : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDescriptionDraft(community.description);
+                  setIsEditingDescription(false);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <p>{community.description}</p>
+            {community.isSuperAdmin && (
+              <button
+                className="community-description-edit"
+                type="button"
+                onClick={() => setIsEditingDescription(true)}
+              >
+                Edit description
+              </button>
+            )}
+          </>
+        )}
         <div>
           <span>{community.memberCount} members</span>
           <span>{community.postCount} posts</span>
@@ -297,7 +386,41 @@ export default function CommunityView({
       </div>
 
       {community.isJoined && (
-          <form className="community-composer" onSubmit={createPost}>
+        <>
+          <button
+            className="community-composer-open"
+            type="button"
+            aria-label="Add a community post"
+            aria-expanded={isComposerOpen}
+            onClick={() => setIsComposerOpen(true)}
+          >
+            +
+          </button>
+          {isComposerOpen && (
+            <button
+              className="community-composer-backdrop"
+              type="button"
+              aria-label="Close post composer"
+              onClick={() => setIsComposerOpen(false)}
+            />
+          )}
+          <form
+            ref={composerRef}
+            className={"community-composer" + (isComposerOpen ? " is-open" : "")}
+            role={isComposerOpen ? "dialog" : undefined}
+            aria-modal={isComposerOpen ? true : undefined}
+            onSubmit={createPost}
+          >
+            <div className="community-composer-heading">
+              <span>Add link or note</span>
+              <button
+                type="button"
+                aria-label="Close post composer"
+                onClick={() => setIsComposerOpen(false)}
+              >
+                ×
+              </button>
+            </div>
             <div className="community-kind" role="group" aria-label="Post type">
               <button
                 type="button"
@@ -351,8 +474,11 @@ export default function CommunityView({
               {isPosting ? "Sharing" : postKind === "link" ? "Share link" : "Share note"}
             </button>
           </form>
+        </>
       )}
+      </div>
 
+      <div className="community-feed">
       <div className="community-post-toolbar">
             <input
               type="search"
@@ -481,6 +607,7 @@ export default function CommunityView({
           {busyId === "load-more" ? "Loading" : "Load more"}
         </button>
       )}
+      </div>
     </section>
   );
 }

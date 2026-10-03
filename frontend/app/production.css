@@ -2313,6 +2313,10 @@ textarea:disabled {
   animation: page-in 420ms ease both;
 }
 
+.community-view {
+  animation: none;
+}
+
 .community-hero {
   position: relative;
   min-height: 19rem;
@@ -2535,9 +2539,19 @@ textarea:disabled {
 
 .community-back:hover { color: var(--cobalt); }
 
+.community-sidebar,
+.community-feed {
+  display: grid;
+  min-width: 0;
+  align-self: start;
+  gap: 1.2rem;
+}
+
+.community-sidebar { grid-column: 1; }
+.community-feed { grid-column: 2; }
+
 .community-view-header {
   position: relative;
-  grid-column: 1;
   align-self: start;
   padding: clamp(1.5rem, 3vw, 2.5rem);
   overflow: hidden;
@@ -2581,6 +2595,52 @@ textarea:disabled {
   color: rgba(255, 253, 247, 0.65);
 }
 
+.community-description-editor {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.community-description-editor textarea {
+  width: 100%;
+  padding: 0.7rem;
+  resize: vertical;
+  border: 1px solid rgba(255, 253, 247, 0.45);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--paper-bright);
+  line-height: 1.5;
+}
+
+.community-description-editor > div {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.community-description-editor button {
+  min-height: 2.35rem;
+  padding: 0 0.7rem;
+  border: 1px solid rgba(255, 253, 247, 0.4);
+  background: transparent;
+  color: var(--paper-bright);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  cursor: pointer;
+}
+
+.community-description-editor button:first-child {
+  border-color: var(--lime);
+  background: var(--lime);
+  color: var(--ink);
+}
+
+.community-view-header > .community-description-edit {
+  min-height: 2.2rem;
+  margin-top: 0.8rem;
+  border-color: rgba(255, 253, 247, 0.35);
+  background: transparent;
+  color: var(--paper-bright);
+}
+
 .community-view-header > div:not(.community-view-label) {
   display: flex;
   gap: 0.8rem;
@@ -2600,15 +2660,12 @@ textarea:disabled {
 }
 
 .community-feedback {
-  grid-column: 1 / -1;
   min-height: 0.5rem;
 }
 
 .community-composer {
-  position: sticky;
-  top: 1.5rem;
+  position: relative;
   display: grid;
-  grid-column: 1;
   align-self: start;
   gap: 0.85rem;
   padding: 1.2rem;
@@ -2616,13 +2673,22 @@ textarea:disabled {
   background: var(--paper-bright);
 }
 
-.community-composer::before {
+.community-composer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   color: var(--cobalt);
-  content: "ADD TO THIS INDEX";
   font-family: var(--font-mono);
   font-size: 0.58rem;
   font-weight: 600;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.community-composer-heading button,
+.community-composer-open,
+.community-composer-backdrop {
+  display: none;
 }
 
 .community-composer input { min-height: 2.9rem; padding: 0 0.75rem; }
@@ -2630,7 +2696,6 @@ textarea:disabled {
 .community-edit textarea { padding: 0.7rem 0.75rem; resize: vertical; }
 
 .community-post-toolbar {
-  grid-column: 2;
   grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.6fr);
   align-self: start;
   margin: 0;
@@ -2638,7 +2703,6 @@ textarea:disabled {
 
 .community-post-grid {
   display: grid;
-  grid-column: 2;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-self: start;
   gap: 0.8rem;
@@ -2727,7 +2791,7 @@ textarea:disabled {
 }
 
 .community-empty {
-  grid-column: 2;
+  grid-column: 1;
 }
 
 .community-edit {
@@ -2756,7 +2820,6 @@ textarea:disabled {
 .community-join-gate p { margin: 0; }
 
 .community-load-more {
-  grid-column: 2;
   width: 100%;
   margin-top: 0.4rem;
   background: var(--paper-deep);
@@ -3036,15 +3099,9 @@ textarea:disabled {
 
   .community-view { grid-template-columns: 1fr; }
   .community-back,
-  .community-view-header,
-  .community-feedback,
-  .community-composer,
-  .community-post-toolbar,
-  .community-post-grid,
-  .community-join-gate,
-  .community-load-more { grid-column: 1; }
+  .community-sidebar,
+  .community-feed { grid-column: 1; }
   .community-empty { grid-column: 1; }
-  .community-composer { position: static; }
   .community-post-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .about-hero {
@@ -3191,6 +3248,64 @@ textarea:disabled {
   .community-card footer { grid-column: 2; grid-row: 2; }
   .community-post-grid { grid-template-columns: 1fr; }
   .community-view-header { box-shadow: 0.4rem 0.4rem 0 var(--cobalt); }
+
+  .community-composer {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 160;
+    display: none;
+    max-height: calc(100dvh - max(1rem, env(safe-area-inset-top, 0px)));
+    overflow-y: auto;
+    padding: 1.2rem 1rem max(1.2rem, env(safe-area-inset-bottom, 0px));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    box-shadow: 0 -0.5rem 0 var(--cobalt);
+  }
+
+  .community-composer.is-open { display: grid; }
+
+  .community-composer-heading button {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border: 1px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  .community-composer-open {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right, 0px));
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    z-index: 120;
+    display: grid;
+    width: 3.5rem;
+    height: 3.5rem;
+    place-items: center;
+    border: 1px solid var(--ink);
+    background: var(--cobalt);
+    color: #fff;
+    font-size: 1.65rem;
+    line-height: 1;
+    box-shadow: 0.3rem 0.3rem 0 var(--ink);
+    cursor: pointer;
+  }
+
+  .community-composer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    display: block;
+    border: 0;
+    background: rgba(23, 26, 26, 0.68);
+    cursor: pointer;
+  }
 
   .about-hero {
     min-height: 20rem;

@@ -329,6 +329,30 @@ export async function setCommunityArchived(
   if (!result.matchedCount) throw new CommunityError("Community not found.", "NOT_FOUND");
 }
 
+/** Update a community description as the super admin. */
+export async function updateCommunityDescription(
+  user: AuthenticatedUser,
+  communityId: string,
+  description: string,
+): Promise<string> {
+  if (!user.isSuperAdmin) throw new CommunityError("Super admin access required.", "FORBIDDEN");
+  if (!ObjectId.isValid(communityId)) throw new CommunityError("Community not found.", "NOT_FOUND");
+  const normalizedDescription = description.trim();
+  if (normalizedDescription.length < 10 || normalizedDescription.length > 500) {
+    throw new CommunityError(
+      "Use a description between 10 and 500 characters.",
+      "INVALID_COMMUNITY",
+    );
+  }
+  const database = await getDatabase();
+  const result = await database.collection<CommunityDocument>("communities").updateOne(
+    { _id: new ObjectId(communityId) },
+    { $set: { description: normalizedDescription, updatedAt: new Date() } },
+  );
+  if (!result.matchedCount) throw new CommunityError("Community not found.", "NOT_FOUND");
+  return normalizedDescription;
+}
+
 /** Join an active community without approval. */
 export async function joinCommunity(userId: ObjectId, communityId: string): Promise<void> {
   if (!ObjectId.isValid(communityId)) throw new CommunityError("Community not found.", "NOT_FOUND");
