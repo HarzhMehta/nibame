@@ -213,10 +213,9 @@ export default function LinkHome({ links, onLinkUpdate }: LinkHomeProps): ReactE
     <section className="link-home" aria-labelledby="link-home-title">
       <header className="link-home-heading">
         <div>
-          <span>Home</span>
-          <h2 id="link-home-title">Pick up where you left off.</h2>
+          <span>Resurface / 03</span>
+          <h2 id="link-home-title">Back within reach.</h2>
         </div>
-        <p>Finite, useful views from what you saved.</p>
       </header>
 
       <div className="link-home-feedback" aria-live="polite">

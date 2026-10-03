@@ -649,8 +649,9 @@ export default function CaptureForm({
       <section className="capture-page" aria-labelledby="capture-title">
         <div className="capture-card">
         <header className="capture-heading">
-          <h1 id="capture-title">Capture anything.</h1>
-          <p>Links, tasks and notes.</p>
+          <span>Quick capture / 01</span>
+          <h1 id="capture-title">Put it here.</h1>
+          <p>Link, task or note.</p>
         </header>
 
         <div className="capture-kind" role="group" aria-label="Capture type">

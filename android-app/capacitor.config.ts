@@ -6,18 +6,20 @@ const config: CapacitorConfig = {
   appId: "com.harshmehta.nibame",
   appName: "nibame",
   webDir: "www",
-  backgroundColor: "#07080a",
+  backgroundColor: "#171a1a",
   server: {
     url: webUrl,
     cleartext: webUrl.startsWith("http://"),
   },
   android: {
-    backgroundColor: "#07080a",
+    backgroundColor: "#171a1a",
     allowMixedContent: false,
   },
   plugins: {
     SystemBars: {
       insetsHandling: "css",
+      style: "DARK",
+      hidden: false,
     },
   },
 };

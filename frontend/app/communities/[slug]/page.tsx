@@ -37,11 +37,13 @@ export default async function CommunityPage({
   return (
     <main className="product-shell">
       <ProductHeader email={user.email} />
-      <CommunityView
-        initialCommunity={community}
-        initialPosts={page.posts}
-        initialNextCursor={page.nextCursor}
-      />
+      <div className="product-content">
+        <CommunityView
+          initialCommunity={community}
+          initialPosts={page.posts}
+          initialNextCursor={page.nextCursor}
+        />
+      </div>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 package com.harshmehta.nibame;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.WebView;
@@ -18,6 +19,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(SpeechInputPlugin.class);
         super.onCreate(savedInstanceState);
+        getBridge().getWebView().setBackgroundColor(Color.rgb(23, 26, 26));
         handleShareIntent(getIntent());
     }
 

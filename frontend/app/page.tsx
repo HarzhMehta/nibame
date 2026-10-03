@@ -21,12 +21,14 @@ export default async function Home(): Promise<ReactElement> {
   return (
     <main className="product-shell">
       <ProductHeader email={user.email} />
-      <CaptureForm
-        initialCustomCategories={preferences.customCategories}
-        initialCustomDomainRules={preferences.customDomainRules}
-        initialSavedLinks={savedLinks}
-        initialItems={savedItems}
-      />
+      <div className="product-content">
+        <CaptureForm
+          initialCustomCategories={preferences.customCategories}
+          initialCustomDomainRules={preferences.customDomainRules}
+          initialSavedLinks={savedLinks}
+          initialItems={savedItems}
+        />
+      </div>
     </main>
   );
 }

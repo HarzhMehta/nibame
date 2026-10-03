@@ -14,10 +14,12 @@ export default async function CommunitiesPage(): Promise<ReactElement> {
   return (
     <main className="product-shell">
       <ProductHeader email={user.email} />
-      <CommunityDirectory
-        initialCommunities={communities}
-        isSuperAdmin={user.isSuperAdmin}
-      />
+      <div className="product-content">
+        <CommunityDirectory
+          initialCommunities={communities}
+          isSuperAdmin={user.isSuperAdmin}
+        />
+      </div>
     </main>
   );
 }

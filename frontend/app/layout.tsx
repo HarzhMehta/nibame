@@ -11,14 +11,14 @@ import "./production.css";
 
 export const metadata: Metadata = {
   title: "nibame",
-  description: "Save and organize links with nibame.",
+  description: "Capture links, tasks and notes in one personal index.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#07080a",
+  themeColor: "#f2efe6",
 };
 
 /** Render the nibame prototype document shell. */
@@ -26,7 +26,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>): ReactElement {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   );

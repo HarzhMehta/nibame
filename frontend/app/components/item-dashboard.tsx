@@ -120,7 +120,7 @@ export default function ItemDashboard({
   return (
     <section className="item-dashboard" aria-labelledby="item-dashboard-title">
       <header>
-        <span>Personal</span>
+        <span>Personal / 02</span>
         <h2 id="item-dashboard-title">Tasks, reminders and notes.</h2>
       </header>
       <div className="item-dashboard-feedback" aria-live="polite">

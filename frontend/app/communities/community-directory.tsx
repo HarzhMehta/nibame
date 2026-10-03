@@ -120,9 +120,8 @@ export default function CommunityDirectory({
   return (
     <section className="community-directory" aria-labelledby="communities-title">
       <header className="community-hero">
-        <span>Shared spaces</span>
+        <span>Shared spaces / Public index</span>
         <h1 id="communities-title">Communities</h1>
-        <p>Useful links and notes, without the chat backlog.</p>
       </header>
 
       {isSuperAdmin && (

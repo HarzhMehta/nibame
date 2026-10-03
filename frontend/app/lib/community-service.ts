@@ -252,7 +252,10 @@ export async function createCommunity(
   const name = input.name.trim();
   const description = input.description.trim();
   if (name.length < 3 || name.length > 60 || description.length < 10 || description.length > 500) {
-    throw new CommunityError("Use a 3–60 character name and 10–500 character description.", "INVALID_COMMUNITY");
+    throw new CommunityError(
+      "Use a name between 3 and 60 characters and a description between 10 and 500 characters.",
+      "INVALID_COMMUNITY",
+    );
   }
   if (input.categoryId && categoryById(input.categoryId).id === "unknown") {
     throw new CommunityError("Choose a valid category.", "INVALID_COMMUNITY");
