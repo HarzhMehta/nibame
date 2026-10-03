@@ -17,6 +17,9 @@ We save reels, DM ourselves links, and bookmark things we swear we'll come back 
 <p align="center">
   <img src="assets/nibame_philosophy.svg" alt="nibame core" width="680"/>
 </p>
+--- 
+Web app :  https://nibamedeploy.vercel.app/
+Android APK can be downloaded from : android-app/releases
 
 ## Before we begin this readme
 My personal note - I'm Harsh Mehta, this readme was my memory dump that i shared with claude and it has converted into a structured format. Before you hop on to the AI generated things, I wanted to share some handwritten thoughts. 
