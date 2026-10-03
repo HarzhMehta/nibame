@@ -5,6 +5,12 @@ import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { MongoServerError, ObjectId } from "mongodb";
 import { cookies } from "next/headers";
 
+import {
+  blindIndex,
+  decryptString,
+  encryptString,
+  passwordPepper,
+} from "./data-encryption";
 import { getDatabase } from "./mongodb";
 
 const SESSION_COOKIE = "nibame_session";
@@ -13,9 +19,11 @@ const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30;
 interface UserDocument {
   _id: ObjectId;
   email: string;
-  normalizedEmail: string;
+  normalizedEmail?: string;
+  emailLookup?: string;
   passwordHash: string;
   passwordSalt: string;
+  passwordVersion?: number;
   createdAt: Date;
   updatedAt: Date;
   isSuperAdmin?: boolean;
@@ -52,27 +60,36 @@ function normalizeEmail(email: string): string {
   return email.trim().toLocaleLowerCase();
 }
 
-function derivePasswordKey(password: string, salt: string): Promise<Buffer> {
+function derivePasswordKey(password: string, salt: string, version = 2): Promise<Buffer> {
+  const pepper = passwordPepper();
+  if (version >= 2 && !pepper) {
+    throw new Error("NIBAME_PASSWORD_PEPPER is required for this password hash.");
+  }
+  const passwordMaterial = version >= 2 ? `${password}\0${pepper}` : password;
   return new Promise((resolve, reject) => {
-    scrypt(password, salt, 64, (error, key) => {
+    scrypt(passwordMaterial, salt, 64, (error, key) => {
       if (error) reject(error);
       else resolve(key);
     });
   });
 }
 
-async function createPasswordHash(password: string): Promise<{ hash: string; salt: string }> {
+async function createPasswordHash(
+  password: string,
+): Promise<{ hash: string; salt: string; version: number }> {
   const salt = randomBytes(16).toString("hex");
-  const key = await derivePasswordKey(password, salt);
-  return { hash: key.toString("hex"), salt };
+  const version = passwordPepper() ? 2 : 1;
+  const key = await derivePasswordKey(password, salt, version);
+  return { hash: key.toString("hex"), salt, version };
 }
 
 async function passwordMatches(
   password: string,
   expectedHash: string,
   salt: string,
+  version: number,
 ): Promise<boolean> {
-  const suppliedKey = await derivePasswordKey(password, salt);
+  const suppliedKey = await derivePasswordKey(password, salt, version);
   const expectedKey = Buffer.from(expectedHash, "hex");
   return suppliedKey.length === expectedKey.length && timingSafeEqual(suppliedKey, expectedKey);
 }
@@ -86,18 +103,23 @@ export async function registerUser(email: string, password: string): Promise<Aut
   const database = await getDatabase();
   const passwordRecord = await createPasswordHash(password);
   const now = new Date();
+  const normalizedEmail = normalizeEmail(email);
+  const emailLookup = blindIndex("user.email", normalizedEmail);
+  const displayEmail = email.trim();
   const document = {
-    email: email.trim(),
-    normalizedEmail: normalizeEmail(email),
+    email: encryptString(displayEmail, "user.email"),
+    normalizedEmail: emailLookup,
+    emailLookup,
     passwordHash: passwordRecord.hash,
     passwordSalt: passwordRecord.salt,
+    passwordVersion: passwordRecord.version,
     createdAt: now,
     updatedAt: now,
   };
 
   try {
     const result = await database.collection<Omit<UserDocument, "_id">>("users").insertOne(document);
-    return { id: result.insertedId, email: document.email, isSuperAdmin: false };
+    return { id: result.insertedId, email: displayEmail, isSuperAdmin: false };
   } catch (error) {
     if (error instanceof MongoServerError && error.code === 11000) {
       throw new AuthenticationError("An account already exists for this email.", "EMAIL_TAKEN");
@@ -112,14 +134,50 @@ export async function authenticateUser(
   password: string,
 ): Promise<AuthenticatedUser> {
   const database = await getDatabase();
+  const normalizedEmail = normalizeEmail(email);
+  const emailLookup = blindIndex("user.email", normalizedEmail);
   const user = await database
     .collection<UserDocument>("users")
-    .findOne({ normalizedEmail: normalizeEmail(email) });
+    .findOne({
+      $or: [
+        { emailLookup },
+        { normalizedEmail },
+      ],
+    });
 
-  if (!user || !(await passwordMatches(password, user.passwordHash, user.passwordSalt))) {
+  const passwordVersion = user?.passwordVersion ?? 1;
+  if (
+    !user ||
+    !(await passwordMatches(password, user.passwordHash, user.passwordSalt, passwordVersion))
+  ) {
     throw new AuthenticationError("Email or password is incorrect.", "INVALID_CREDENTIALS");
   }
-  return { id: user._id, email: user.email, isSuperAdmin: user.isSuperAdmin === true };
+  const displayEmail = decryptString(user.email, "user.email");
+  const shouldUpgradePassword = passwordVersion < 2 && Boolean(passwordPepper());
+  if (shouldUpgradePassword || !user.emailLookup) {
+    const upgradedPassword = shouldUpgradePassword
+      ? await createPasswordHash(password)
+      : null;
+    await database.collection<UserDocument>("users").updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          email: encryptString(displayEmail, "user.email"),
+          normalizedEmail: emailLookup,
+          emailLookup,
+          ...(upgradedPassword
+            ? {
+                passwordHash: upgradedPassword.hash,
+                passwordSalt: upgradedPassword.salt,
+                passwordVersion: upgradedPassword.version,
+              }
+            : {}),
+          updatedAt: new Date(),
+        },
+      },
+    );
+  }
+  return { id: user._id, email: displayEmail, isSuperAdmin: user.isSuperAdmin === true };
 }
 
 /** Create a persistent server-side session and set its secure browser cookie. */
@@ -183,7 +241,11 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
     .next();
   const user = session?.user;
   return user
-    ? { id: user._id, email: user.email, isSuperAdmin: user.isSuperAdmin === true }
+    ? {
+        id: user._id,
+        email: decryptString(user.email, "user.email"),
+        isSuperAdmin: user.isSuperAdmin === true,
+      }
     : null;
 }
 

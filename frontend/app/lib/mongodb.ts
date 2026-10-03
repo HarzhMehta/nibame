@@ -24,11 +24,22 @@ export function getMongoClient(): Promise<MongoClient> {
 async function ensureIndexes(database: Db): Promise<void> {
   await Promise.all([
     database.collection("users").createIndex({ normalizedEmail: 1 }, { unique: true }),
+    database.collection("users").createIndex(
+      { emailLookup: 1 },
+      { unique: true, partialFilterExpression: { emailLookup: { $type: "string" } } },
+    ),
     database.collection("sessions").createIndex({ tokenHash: 1 }, { unique: true }),
     database.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     database.collection("custom_categories").createIndex(
       { userId: 1, normalizedLabel: 1 },
       { unique: true },
+    ),
+    database.collection("custom_categories").createIndex(
+      { userId: 1, normalizedLabelLookup: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { normalizedLabelLookup: { $type: "string" } },
+      },
     ),
     database.collection("custom_categories").createIndex(
       { userId: 1, id: 1 },
@@ -38,9 +49,17 @@ async function ensureIndexes(database: Db): Promise<void> {
       { userId: 1, domain: 1 },
       { unique: true },
     ),
+    database.collection("domain_rules").createIndex(
+      { userId: 1, domainLookup: 1 },
+      { unique: true, partialFilterExpression: { domainLookup: { $type: "string" } } },
+    ),
     database.collection("links").createIndex(
       { userId: 1, normalizedUrl: 1 },
       { unique: true },
+    ),
+    database.collection("links").createIndex(
+      { userId: 1, urlLookup: 1 },
+      { unique: true, partialFilterExpression: { urlLookup: { $type: "string" } } },
     ),
     database.collection("links").createIndex({ userId: 1, updatedAt: -1 }),
     database.collection("links").createIndex({ userId: 1, categoryId: 1, updatedAt: -1 }),

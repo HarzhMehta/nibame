@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "data:encrypt": "node --env-file=.env.local scripts/migrate-private-data.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.0.0",

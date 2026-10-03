@@ -2,6 +2,7 @@ import "server-only";
 
 import { ObjectId, type UpdateFilter } from "mongodb";
 
+import { decryptJson, encryptJson } from "./data-encryption";
 import type { UserItem, UserItemKind, UserItemStatus } from "./item-types";
 import { getDatabase } from "./mongodb";
 
@@ -9,15 +10,22 @@ interface UserItemDocument {
   _id: ObjectId;
   userId: ObjectId;
   kind: UserItemKind;
-  text: string;
+  text?: string;
   status: UserItemStatus;
   remindAt?: Date;
-  timezone: string;
+  timezone?: string;
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date;
   categoryId?: string;
   sourceCommunityPostId?: string;
+  privateData?: string;
+}
+
+interface UserItemPrivateData {
+  text: string;
+  timezone: string;
+  categoryId?: string;
 }
 
 export type UserItemAction = "complete" | "reopen" | "archive";
@@ -32,17 +40,24 @@ export class UserItemError extends Error {
 }
 
 function serializeItem(item: UserItemDocument): UserItem {
+  const privateData = item.privateData
+    ? decryptJson<UserItemPrivateData>(item.privateData, "item.privateData")
+    : {
+        text: item.text ?? "",
+        timezone: item.timezone ?? "UTC",
+        categoryId: item.categoryId,
+      };
   return {
     id: item._id.toHexString(),
     kind: item.kind,
-    text: item.text,
+    text: privateData.text,
     status: item.status,
     remindAt: item.remindAt?.toISOString(),
-    timezone: item.timezone,
+    timezone: privateData.timezone,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
     completedAt: item.completedAt?.toISOString(),
-    categoryId: item.categoryId,
+    categoryId: privateData.categoryId,
     sourceCommunityPostId: item.sourceCommunityPostId,
   };
 }
@@ -89,10 +104,15 @@ export async function createUserItem(
   const document = {
     userId,
     kind: input.kind,
-    text,
     status: "active" as const,
     remindAt,
-    timezone: input.timezone.slice(0, 100) || "UTC",
+    privateData: encryptJson(
+      {
+        text,
+        timezone: input.timezone.slice(0, 100) || "UTC",
+      } satisfies UserItemPrivateData,
+      "item.privateData",
+    ),
     createdAt: now,
     updatedAt: now,
   };
@@ -165,10 +185,15 @@ export async function importCommunityNote(
   const document = {
     userId,
     kind: "note" as const,
-    text: input.text.trim().slice(0, 4000),
     status: "active" as const,
-    timezone: input.timezone.slice(0, 100) || "UTC",
-    categoryId: input.categoryId,
+    privateData: encryptJson(
+      {
+        text: input.text.trim().slice(0, 4000),
+        timezone: input.timezone.slice(0, 100) || "UTC",
+        categoryId: input.categoryId,
+      } satisfies UserItemPrivateData,
+      "item.privateData",
+    ),
     sourceCommunityPostId: input.postId,
     createdAt: now,
     updatedAt: now,

@@ -6,6 +6,7 @@ import {
   classifyUrlShape,
   extractLinkMetadata,
 } from "./metadata-extractor";
+import { blindIndex, decryptJson, encryptJson } from "./data-encryption";
 import type {
   LinkContentType,
   LinkIntent,
@@ -25,12 +26,14 @@ import {
 interface LinkDocument {
   _id: ObjectId;
   userId: ObjectId;
-  originalUrl: string;
-  normalizedUrl: string;
-  domain: string;
-  ruleDomain: string;
+  originalUrl?: string;
+  normalizedUrl?: string;
+  domain?: string;
+  ruleDomain?: string;
+  urlLookup?: string;
+  ruleLookup?: string;
   categoryId: string;
-  categoryLabel: string;
+  categoryLabel?: string;
   color: string;
   type?: LinkContentType;
   intent?: LinkIntent;
@@ -51,16 +54,39 @@ interface LinkDocument {
   metadataStartedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  privateData?: string;
+}
+
+interface LinkPrivateData {
+  originalUrl: string;
+  normalizedUrl: string;
+  domain: string;
+  ruleDomain: string;
+  categoryLabel: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  faviconUrl?: string;
+  sourceName?: string;
+  userDescription?: string;
+  metadata?: LinkMetadata;
 }
 
 interface StoredDomainRule {
   userId: ObjectId;
-  domain: string;
+  domain?: string;
+  domainLookup?: string;
   categoryId: string;
+  privateData?: string;
 }
 
-interface StoredCustomCategory extends CategorySummary {
+interface StoredCustomCategory {
+  _id: ObjectId;
   userId: ObjectId;
+  id: string;
+  label?: string;
+  color: string;
+  privateData?: string;
 }
 
 export type LinkActivityAction = "open" | "archive" | "later";
@@ -74,30 +100,51 @@ export class LinkError extends Error {
   }
 }
 
+function privateLinkData(link: LinkDocument): LinkPrivateData {
+  if (link.privateData) {
+    return decryptJson<LinkPrivateData>(link.privateData, "link.privateData");
+  }
+  return {
+    originalUrl: link.originalUrl ?? "",
+    normalizedUrl: link.normalizedUrl ?? "",
+    domain: link.domain ?? "",
+    ruleDomain: link.ruleDomain ?? "",
+    categoryLabel: link.categoryLabel ?? "Uncategorized",
+    title: link.title,
+    description: link.description,
+    imageUrl: link.imageUrl,
+    faviconUrl: link.faviconUrl,
+    sourceName: link.sourceName,
+    userDescription: link.userDescription,
+    metadata: link.metadata,
+  };
+}
+
 function serializeLink(link: LinkDocument): SavedLink {
-  const fallback = classifyUrlShape(new URL(link.normalizedUrl));
+  const privateData = privateLinkData(link);
+  const fallback = classifyUrlShape(new URL(privateData.normalizedUrl));
   const type = link.type ?? fallback.type;
   return {
     id: link._id.toHexString(),
-    url: link.originalUrl,
-    normalizedUrl: link.normalizedUrl,
-    domain: link.domain,
-    ruleDomain: link.ruleDomain,
+    url: privateData.originalUrl,
+    normalizedUrl: privateData.normalizedUrl,
+    domain: privateData.domain,
+    ruleDomain: privateData.ruleDomain,
     categoryId: link.categoryId,
-    categoryLabel: link.categoryLabel,
+    categoryLabel: privateData.categoryLabel,
     color: link.color,
     type,
     intent: link.intent ?? fallback.intent,
     state: link.state ?? "new",
-    title: link.title ?? link.domain,
-    description: link.description,
-    imageUrl: link.imageUrl,
-    faviconUrl: link.faviconUrl,
-    sourceName: link.sourceName ?? link.domain,
-    userDescription: link.userDescription,
+    title: privateData.title ?? privateData.domain,
+    description: privateData.description,
+    imageUrl: privateData.imageUrl,
+    faviconUrl: privateData.faviconUrl,
+    sourceName: privateData.sourceName ?? privateData.domain,
+    userDescription: privateData.userDescription,
     importedFromCommunityPostIds: link.importedFromCommunityPostIds,
     metadataStatus: link.metadataStatus ?? "pending",
-    metadata: link.metadata ?? { kind: type },
+    metadata: privateData.metadata ?? { kind: type },
     openedCount: link.openedCount ?? 0,
     lastOpenedAt: link.lastOpenedAt?.toISOString(),
     resurfaceAfter: link.resurfaceAfter?.toISOString(),
@@ -114,9 +161,13 @@ async function resolveCategory(
   if (!parsed) throw new LinkError("Enter a valid HTTP(S) URL or bare domain.", "INVALID_URL");
 
   const database = await getDatabase();
+  const domainLookup = blindIndex("domain.rule", parsed.ruleDomain);
   const userRule = await database
     .collection<StoredDomainRule>("domain_rules")
-    .findOne({ userId, domain: parsed.ruleDomain });
+    .findOne({
+      userId,
+      $or: [{ domainLookup }, { domain: parsed.ruleDomain }],
+    });
   if (userRule) {
     const builtInCategory = getBuiltInCategories().find(
       (category) => category.id === userRule.categoryId,
@@ -126,7 +177,19 @@ async function resolveCategory(
     const customCategory = await database
       .collection<StoredCustomCategory>("custom_categories")
       .findOne({ userId, id: userRule.categoryId });
-    if (customCategory) return { parsed, category: customCategory };
+    if (customCategory) {
+      const categoryPrivateData = customCategory.privateData
+        ? decryptJson<{ label: string }>(customCategory.privateData, "category.privateData")
+        : { label: customCategory.label ?? "Custom category" };
+      return {
+        parsed,
+        category: {
+          id: customCategory.id,
+          label: categoryPrivateData.label,
+          color: customCategory.color,
+        },
+      };
+    }
   }
 
   const result = categorizeUrl(input);
@@ -146,38 +209,82 @@ export async function saveUserLink(userId: ObjectId, input: string): Promise<Sav
   const database = await getDatabase();
   const now = new Date();
   const shape = classifyUrlShape(new URL(parsed.normalizedUrl));
-  await database.collection<LinkDocument>("links").updateOne(
-    { userId, normalizedUrl: parsed.normalizedUrl },
-    {
-      $set: {
-        originalUrl: input.trim(),
-        domain: parsed.hostname,
-        ruleDomain: parsed.ruleDomain,
-        categoryId: category.id,
-        categoryLabel: category.label,
-        color: category.color,
-        updatedAt: now,
-      },
-      $setOnInsert: {
-        userId,
-        normalizedUrl: parsed.normalizedUrl,
-        type: shape.type,
-        intent: shape.intent,
-        state: "new",
-        title: parsed.hostname,
-        sourceName: parsed.hostname,
-        metadataStatus: "pending",
-        metadata: { kind: shape.type },
-        openedCount: 0,
-        createdAt: now,
-      },
-    },
-    { upsert: true },
-  );
+  const urlLookup = blindIndex("link.url", parsed.normalizedUrl);
+  const ruleLookup = blindIndex("domain.rule", parsed.ruleDomain);
+  const collection = database.collection<LinkDocument>("links");
+  const existing = await collection.findOne({
+    userId,
+    $or: [{ urlLookup }, { normalizedUrl: parsed.normalizedUrl }],
+  });
 
-  const link = await database
-    .collection<LinkDocument>("links")
-    .findOne({ userId, normalizedUrl: parsed.normalizedUrl });
+  if (existing) {
+    const privateData = {
+      ...privateLinkData(existing),
+      originalUrl: input.trim(),
+      normalizedUrl: parsed.normalizedUrl,
+      domain: parsed.hostname,
+      ruleDomain: parsed.ruleDomain,
+      categoryLabel: category.label,
+    };
+    await collection.updateOne(
+      { _id: existing._id, userId },
+      {
+        $set: {
+          normalizedUrl: urlLookup,
+          ruleDomain: ruleLookup,
+          urlLookup,
+          ruleLookup,
+          categoryId: category.id,
+          color: category.color,
+          privateData: encryptJson(privateData, "link.privateData"),
+          updatedAt: now,
+        },
+        $unset: {
+          originalUrl: "",
+          domain: "",
+          categoryLabel: "",
+          title: "",
+          description: "",
+          imageUrl: "",
+          faviconUrl: "",
+          sourceName: "",
+          userDescription: "",
+          metadata: "",
+        },
+      },
+    );
+  } else {
+    const privateData: LinkPrivateData = {
+      originalUrl: input.trim(),
+      normalizedUrl: parsed.normalizedUrl,
+      domain: parsed.hostname,
+      ruleDomain: parsed.ruleDomain,
+      categoryLabel: category.label,
+      title: parsed.hostname,
+      sourceName: parsed.hostname,
+      metadata: { kind: shape.type },
+    };
+    await collection.insertOne({
+      _id: new ObjectId(),
+      userId,
+      normalizedUrl: urlLookup,
+      ruleDomain: ruleLookup,
+      urlLookup,
+      ruleLookup,
+      categoryId: category.id,
+      color: category.color,
+      type: shape.type,
+      intent: shape.intent,
+      state: "new",
+      metadataStatus: "pending",
+      openedCount: 0,
+      privateData: encryptJson(privateData, "link.privateData"),
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  const link = await collection.findOne({ userId, urlLookup });
   if (!link) throw new LinkError("Could not save this link.", "NOT_FOUND");
   return serializeLink(link);
 }
@@ -207,23 +314,38 @@ export async function enrichUserLink(userId: ObjectId, id: string): Promise<void
   if (!link) return;
 
   try {
-    const enriched = await extractLinkMetadata(link.normalizedUrl);
+    const existingPrivateData = privateLinkData(link);
+    const enriched = await extractLinkMetadata(existingPrivateData.normalizedUrl);
     await database.collection<LinkDocument>("links").updateOne(
       { _id: objectId, userId },
       {
         $set: {
           type: enriched.type,
           intent: enriched.intent,
-          title: enriched.title,
-          description: enriched.description,
-          imageUrl: enriched.imageUrl,
-          faviconUrl: enriched.faviconUrl,
-          sourceName: enriched.sourceName,
-          metadata: enriched.metadata,
+          privateData: encryptJson(
+            {
+              ...existingPrivateData,
+              title: enriched.title,
+              description: enriched.description,
+              imageUrl: enriched.imageUrl,
+              faviconUrl: enriched.faviconUrl,
+              sourceName: enriched.sourceName,
+              metadata: enriched.metadata,
+            } satisfies LinkPrivateData,
+            "link.privateData",
+          ),
           metadataStatus: "ready",
           metadataUpdatedAt: new Date(),
         },
-        $unset: { metadataStartedAt: "" },
+        $unset: {
+          title: "",
+          description: "",
+          imageUrl: "",
+          faviconUrl: "",
+          sourceName: "",
+          metadata: "",
+          metadataStartedAt: "",
+        },
       },
     );
   } catch {
@@ -307,16 +429,69 @@ export async function updateLinksForDomain(
   session?: ClientSession,
 ): Promise<void> {
   const database = await getDatabase();
-  await database.collection<LinkDocument>("links").updateMany(
-    { userId, ruleDomain: domain },
-    {
-      $set: {
-        categoryId: category.id,
-        categoryLabel: category.label,
-        color: category.color,
-        updatedAt: new Date(),
+  const ruleLookup = blindIndex("domain.rule", domain);
+  const collection = database.collection<LinkDocument>("links");
+  const links = await collection.find(
+    { userId, $or: [{ ruleLookup }, { ruleDomain: domain }] },
+    { session },
+  ).toArray();
+  if (!links.length) return;
+  await collection.bulkWrite(
+    links.map((link) => ({
+      updateOne: {
+        filter: { _id: link._id, userId },
+        update: {
+          $set: {
+            ruleDomain: ruleLookup,
+            ruleLookup,
+            categoryId: category.id,
+            color: category.color,
+            privateData: encryptJson(
+              { ...privateLinkData(link), categoryLabel: category.label },
+              "link.privateData",
+            ),
+            updatedAt: new Date(),
+          },
+          $unset: { categoryLabel: "" },
+        },
       },
-    },
+    })),
+    { session },
+  );
+}
+
+/** Reclassify private links before their custom category is deleted. */
+export async function reclassifyLinksForDeletedCategory(
+  userId: ObjectId,
+  categoryId: string,
+  session?: ClientSession,
+): Promise<void> {
+  const database = await getDatabase();
+  const collection = database.collection<LinkDocument>("links");
+  const links = await collection.find({ userId, categoryId }, { session }).toArray();
+  if (!links.length) return;
+  await collection.bulkWrite(
+    links.map((link) => {
+      const privateData = privateLinkData(link);
+      const result = categorizeUrl(privateData.originalUrl);
+      return {
+        updateOne: {
+          filter: { _id: link._id, userId },
+          update: {
+            $set: {
+              categoryId: result.category,
+              color: result.color,
+              privateData: encryptJson(
+                { ...privateData, categoryLabel: result.category_label },
+                "link.privateData",
+              ),
+              updatedAt: new Date(),
+            },
+            $unset: { categoryLabel: "" },
+          },
+        },
+      };
+    }),
     { session },
   );
 }
@@ -334,16 +509,27 @@ export async function importCommunityLink(
   const saved = await saveUserLink(userId, input.url);
   const database = await getDatabase();
   const objectId = new ObjectId(saved.id);
+  const existing = await database
+    .collection<LinkDocument>("links")
+    .findOne({ _id: objectId, userId });
+  if (!existing) throw new LinkError("Could not import this link.", "NOT_FOUND");
   await database.collection<LinkDocument>("links").updateOne(
     { _id: objectId, userId },
     {
       $set: {
         categoryId: input.category.id,
-        categoryLabel: input.category.label,
         color: input.category.color,
-        userDescription: input.description?.trim().slice(0, 600) || undefined,
+        privateData: encryptJson(
+          {
+            ...privateLinkData(existing),
+            categoryLabel: input.category.label,
+            userDescription: input.description?.trim().slice(0, 600) || undefined,
+          },
+          "link.privateData",
+        ),
         updatedAt: new Date(),
       },
+      $unset: { categoryLabel: "", userDescription: "" },
       $addToSet: { importedFromCommunityPostIds: input.postId },
     },
   );

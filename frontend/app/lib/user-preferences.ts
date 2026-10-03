@@ -4,10 +4,13 @@ import { randomUUID } from "node:crypto";
 
 import { MongoServerError, type ClientSession, type ObjectId } from "mongodb";
 
+import { blindIndex, decryptJson, encryptJson } from "./data-encryption";
 import { getDatabase, getMongoClient } from "./mongodb";
-import { updateLinksForDomain } from "./user-links";
 import {
-  categorizeUrl,
+  reclassifyLinksForDeletedCategory,
+  updateLinksForDomain,
+} from "./user-links";
+import {
   categoryNameExists,
   createCustomCategory,
   getBuiltInCategories,
@@ -15,19 +18,42 @@ import {
   type SessionDomainRule,
 } from "./url-categorizer";
 
-interface CustomCategoryDocument extends CustomCategory {
+interface CustomCategoryDocument {
   _id: ObjectId;
   userId: ObjectId;
-  normalizedLabel: string;
+  id: string;
+  label?: string;
+  color: string;
+  domains?: Array<string>;
+  domain_count: number;
+  examples?: Array<string>;
+  isCustom: true;
+  normalizedLabel?: string;
+  normalizedLabelLookup?: string;
+  privateData?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface DomainRuleDocument extends SessionDomainRule {
+interface DomainRuleDocument {
   _id: ObjectId;
   userId: ObjectId;
+  domain?: string;
+  domainLookup?: string;
+  categoryId: string;
+  privateData?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+interface CustomCategoryPrivateData {
+  label: string;
+  domains: Array<string>;
+  examples: Array<string>;
+}
+
+interface DomainRulePrivateData {
+  domain: string;
 }
 
 export interface UserPreferences {
@@ -42,6 +68,37 @@ export class PreferenceError extends Error {
   ) {
     super(message);
   }
+}
+
+function categoryPrivateData(category: CustomCategoryDocument): CustomCategoryPrivateData {
+  if (category.privateData) {
+    return decryptJson<CustomCategoryPrivateData>(category.privateData, "category.privateData");
+  }
+  return {
+    label: category.label ?? "Custom category",
+    domains: category.domains ?? [],
+    examples: category.examples ?? [],
+  };
+}
+
+function serializeCategory(category: CustomCategoryDocument): CustomCategory {
+  const privateData = categoryPrivateData(category);
+  return {
+    id: category.id,
+    label: privateData.label,
+    color: category.color,
+    domains: privateData.domains,
+    domain_count: category.domain_count,
+    examples: privateData.examples,
+    isCustom: true,
+  };
+}
+
+function rulePrivateData(rule: DomainRuleDocument): DomainRulePrivateData {
+  if (rule.privateData) {
+    return decryptJson<DomainRulePrivateData>(rule.privateData, "domainRule.privateData");
+  }
+  return { domain: rule.domain ?? "" };
 }
 
 /** Load a user's persisted categories and domain overrides. */
@@ -61,17 +118,9 @@ export async function getUserPreferences(userId: ObjectId): Promise<UserPreferen
   ]);
 
   return {
-    customCategories: categoryDocuments.map((category) => ({
-      id: category.id,
-      label: category.label,
-      color: category.color,
-      domains: category.domains,
-      domain_count: category.domain_count,
-      examples: category.examples,
-      isCustom: true,
-    })),
+    customCategories: categoryDocuments.map(serializeCategory),
     customDomainRules: ruleDocuments.map((rule) => ({
-      domain: rule.domain,
+      domain: rulePrivateData(rule).domain,
       categoryId: rule.categoryId,
     })),
   };
@@ -84,11 +133,18 @@ async function upsertDomainRule(
 ): Promise<void> {
   const database = await getDatabase();
   const now = new Date();
+  const domainLookup = blindIndex("domain.rule", rule.domain);
   await database.collection<DomainRuleDocument>("domain_rules").updateOne(
-    { userId, domain: rule.domain },
+    { userId, $or: [{ domainLookup }, { domain: rule.domain }] },
     {
-      $set: { categoryId: rule.categoryId, updatedAt: now },
-      $setOnInsert: { userId, domain: rule.domain, createdAt: now },
+      $set: {
+        domain: domainLookup,
+        domainLookup,
+        categoryId: rule.categoryId,
+        privateData: encryptJson({ domain: rule.domain }, "domainRule.privateData"),
+        updatedAt: now,
+      },
+      $setOnInsert: { userId, createdAt: now },
     },
     { upsert: true, session },
   );
@@ -102,6 +158,7 @@ export async function createUserCategory(
 ): Promise<{ category: CustomCategory; rule: SessionDomainRule }> {
   const database = await getDatabase();
   const normalizedLabel = name.trim().toLocaleLowerCase();
+  const normalizedLabelLookup = blindIndex("category.label", normalizedLabel);
   if (categoryNameExists(name, getBuiltInCategories())) {
     throw new PreferenceError("A category with this name already exists.", "CATEGORY_EXISTS");
   }
@@ -116,9 +173,21 @@ export async function createUserCategory(
   const rule = { domain, categoryId: category.id };
   const now = new Date();
   const document = {
-    ...category,
     userId,
-    normalizedLabel,
+    id: category.id,
+    color: category.color,
+    domain_count: category.domain_count,
+    isCustom: true as const,
+    normalizedLabel: normalizedLabelLookup,
+    normalizedLabelLookup,
+    privateData: encryptJson(
+      {
+        label: category.label,
+        domains: category.domains,
+        examples: category.examples,
+      } satisfies CustomCategoryPrivateData,
+      "category.privateData",
+    ),
     createdAt: now,
     updatedAt: now,
   };
@@ -157,20 +226,33 @@ export async function setUserDomainRule(
     : await database
         .collection<CustomCategoryDocument>("custom_categories")
         .findOne({ userId, id: categoryId });
-  const category = builtInCategory ?? customCategory;
+  const serializedCustomCategory = customCategory ? serializeCategory(customCategory) : null;
+  const category = builtInCategory ?? serializedCustomCategory;
   if (!category) {
     throw new PreferenceError("Choose a valid category.", "CATEGORY_NOT_FOUND");
   }
 
   const rule = { domain, categoryId };
   await upsertDomainRule(userId, rule);
-  if (customCategory && !customCategory.domains.includes(domain)) {
+  if (customCategory && serializedCustomCategory && !serializedCustomCategory.domains.includes(domain)) {
+    const domains = [...serializedCustomCategory.domains, domain];
+    const examples = [...new Set([...serializedCustomCategory.examples, domain])];
     await database.collection<CustomCategoryDocument>("custom_categories").updateOne(
-      { userId, id: categoryId, domains: { $ne: domain } },
+      { userId, id: categoryId },
       {
-        $addToSet: { domains: domain, examples: domain },
         $inc: { domain_count: 1 },
-        $set: { updatedAt: new Date() },
+        $set: {
+          privateData: encryptJson(
+            {
+              label: serializedCustomCategory.label,
+              domains,
+              examples,
+            } satisfies CustomCategoryPrivateData,
+            "category.privateData",
+          ),
+          updatedAt: new Date(),
+        },
+        $unset: { label: "", domains: "", examples: "" },
       },
     );
   }
@@ -196,37 +278,7 @@ export async function deleteUserCategory(
         throw new PreferenceError("Category not found.", "CATEGORY_NOT_FOUND");
       }
 
-      const affectedLinks = await database
-        .collection<{
-          _id: ObjectId;
-          userId: ObjectId;
-          originalUrl: string;
-          categoryId: string;
-        }>("links")
-        .find({ userId, categoryId }, { session })
-        .toArray();
-
-      if (affectedLinks.length) {
-        await database.collection("links").bulkWrite(
-          affectedLinks.map((link) => {
-            const result = categorizeUrl(link.originalUrl);
-            return {
-              updateOne: {
-                filter: { _id: link._id, userId },
-                update: {
-                  $set: {
-                    categoryId: result.category,
-                    categoryLabel: result.category_label,
-                    color: result.color,
-                    updatedAt: new Date(),
-                  },
-                },
-              },
-            };
-          }),
-          { session },
-        );
-      }
+      await reclassifyLinksForDeletedCategory(userId, categoryId, session);
 
       await database.collection("domain_rules").deleteMany(
         { userId, categoryId },
