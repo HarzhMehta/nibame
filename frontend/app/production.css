@@ -70,13 +70,39 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1.25rem;
   min-height: 4.5rem;
   padding:
-    env(safe-area-inset-top)
+    max(
+      0.75rem,
+      env(safe-area-inset-top, 0px),
+      var(--safe-area-inset-top, 0px)
+    )
     max(clamp(1rem, 4vw, 2.5rem), env(safe-area-inset-right))
     0
     max(clamp(1rem, 4vw, 2.5rem), env(safe-area-inset-left));
   border-bottom: 1px solid var(--line);
+}
+
+.product-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: auto;
+}
+
+.product-nav a {
+  min-height: 2.3rem;
+  padding: 0 0.7rem;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+}
+
+.product-nav a:hover {
+  color: var(--ink);
 }
 
 .product-brand {
@@ -129,6 +155,28 @@ select:focus-visible {
   font-family: var(--font-mono);
   font-size: 0.62rem;
   cursor: pointer;
+}
+
+.product-github {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.25rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+}
+
+.product-github:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.product-github strong {
+  color: var(--ink);
+  font-size: inherit;
 }
 
 .product-account button:hover {
@@ -315,6 +363,450 @@ select:focus-visible {
   font-size: 0.7rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+.community-directory,
+.community-view {
+  width: min(calc(100% - 2rem), 76rem);
+  margin: 0 auto;
+  padding: clamp(3.5rem, 7vw, 6rem) 0 max(4rem, env(safe-area-inset-bottom));
+}
+
+.community-hero > span,
+.community-view-label span {
+  color: var(--blue);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.community-hero h1,
+.community-view-header h1 {
+  margin: 0.45rem 0 0;
+  font-size: clamp(2.7rem, 8vw, 5rem);
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+
+.community-hero p,
+.community-view-header > p {
+  max-width: 38rem;
+  margin: 0.9rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.community-create {
+  margin-top: 2rem;
+  border: 1px solid var(--line);
+  background: #0d0f12;
+}
+
+.community-create > summary {
+  min-height: 3rem;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.community-create form {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 0.8rem;
+  padding: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.community-create form > label > span,
+.community-create form > div > span,
+.community-composer label > span,
+.community-composer > div > span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  text-transform: uppercase;
+}
+
+.community-create input,
+.community-create textarea,
+.community-composer input,
+.community-composer textarea,
+.community-toolbar input,
+.community-post-toolbar input,
+.community-edit textarea {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  outline: 0;
+  resize: vertical;
+  background: #101216;
+  color: var(--ink);
+  font: inherit;
+}
+
+.community-create input:focus,
+.community-create textarea:focus,
+.community-composer input:focus,
+.community-composer textarea:focus,
+.community-toolbar input:focus,
+.community-post-toolbar input:focus,
+.community-edit textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(114, 167, 255, 0.08);
+}
+
+.community-create form > button,
+.community-composer > button,
+.community-join-gate button,
+.community-load-more {
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: 0;
+  background: var(--ink);
+  color: var(--page);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.community-toolbar,
+.community-post-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.community-toolbar > span {
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+}
+
+.community-feedback {
+  min-height: 2rem;
+  padding-top: 0.55rem;
+}
+
+.community-feedback p {
+  margin: 0;
+  color: #ff93a1;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+}
+
+.community-feedback p.is-success {
+  color: #55d6b0;
+}
+
+.community-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.community-card {
+  --community-color: var(--blue);
+  display: flex;
+  min-height: 16rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: #0d0f12;
+  flex-direction: column;
+}
+
+.community-card.is-archived {
+  opacity: 0.62;
+}
+
+.community-card-meta,
+.community-post-meta,
+.community-view-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  text-transform: uppercase;
+}
+
+.community-card-meta i,
+.community-post-meta i,
+.community-view-label i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--community-color, var(--post-color));
+}
+
+.community-card-meta small {
+  margin-left: auto;
+  color: #ff93a1;
+}
+
+.community-card h2 {
+  margin: 1.1rem 0 0;
+  font-size: 1.25rem;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.community-card > p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.community-counts {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+}
+
+.community-card footer,
+.community-post footer {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.community-card footer a,
+.community-card footer button,
+.community-post footer button,
+.community-view-header > button,
+.community-edit button {
+  min-height: 2.35rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  cursor: pointer;
+}
+
+.community-card footer a {
+  display: flex;
+  align-items: center;
+  color: var(--ink);
+}
+
+.community-card footer button:disabled,
+.community-post footer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.community-empty,
+.community-join-gate {
+  margin: 0;
+  padding: 3rem 1rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+.community-back {
+  display: inline-block;
+  margin-bottom: 2rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+}
+
+.community-view-header {
+  position: relative;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.community-view-label {
+  --community-color: var(--blue);
+}
+
+.community-view-header > div:not(.community-view-label) {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+}
+
+.community-view-header > button {
+  position: absolute;
+  right: 0;
+  bottom: 2rem;
+}
+
+.community-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.45fr);
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--line-strong);
+  background: #0d0f12;
+}
+
+.community-kind {
+  display: inline-grid;
+  width: fit-content;
+  grid-template-columns: repeat(2, 1fr);
+  border: 1px solid var(--line);
+}
+
+.community-kind button {
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  cursor: pointer;
+}
+
+.community-kind button:last-child {
+  border-right: 0;
+}
+
+.community-kind button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--page);
+}
+
+.community-composer > label {
+  grid-column: 1;
+}
+
+.community-composer > div:not(.community-kind) {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+}
+
+.community-composer > button {
+  grid-column: 2;
+}
+
+.community-post-toolbar {
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.35fr);
+}
+
+.community-post-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.community-post {
+  --post-color: var(--blue);
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #0d0f12;
+  flex-direction: column;
+}
+
+.community-post-image {
+  min-height: 11rem;
+  border-bottom: 1px solid var(--line);
+  background-color: #151821;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.community-post-body {
+  padding: 1rem;
+  flex: 1;
+}
+
+.community-post-meta small {
+  margin-left: auto;
+}
+
+.community-post h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0.9rem 0 0;
+  color: var(--ink);
+  font-size: 1.15rem;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.community-post-body > p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.community-post-comment {
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--line);
+}
+
+.community-post footer {
+  margin: 0;
+  padding: 0.65rem;
+}
+
+.community-post footer button:first-child {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.community-edit {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.community-edit button {
+  width: fit-content;
+}
+
+.community-load-more {
+  display: block;
+  margin: 1rem auto 0;
+}
+
+.community-join-gate button {
+  margin-top: 1rem;
 }
 
 .capture-page {
@@ -1815,7 +2307,50 @@ select:focus-visible {
 @media (max-width: 600px) {
   .product-header {
     min-height: 4rem;
-    padding: 0 1rem;
+    padding:
+      max(
+        0.75rem,
+        env(safe-area-inset-top, 0px),
+        var(--safe-area-inset-top, 0px)
+      )
+      max(1rem, env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px))
+      0
+      max(1rem, env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  }
+
+  .product-header {
+    flex-wrap: wrap;
+    gap: 0.45rem 0.75rem;
+  }
+
+  .product-brand strong {
+    display: none;
+  }
+
+  .product-nav {
+    order: 3;
+    width: 100%;
+    border-top: 1px solid var(--line);
+  }
+
+  .product-nav a {
+    min-height: 2.75rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .product-account {
+    gap: 0.35rem;
+  }
+
+  .product-github,
+  .product-account button {
+    min-height: 2.6rem;
+    padding: 0 0.55rem;
+  }
+
+  .product-github > span {
+    display: none;
   }
 
   .product-account button,
@@ -2069,6 +2604,45 @@ select:focus-visible {
 
   .product-category-card {
     min-height: 8.5rem;
+  }
+
+  .community-directory,
+  .community-view {
+    width: calc(100% - 2rem);
+    padding-top: 3rem;
+  }
+
+  .community-grid,
+  .community-post-grid,
+  .community-create form,
+  .community-composer,
+  .community-post-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .community-create form > button,
+  .community-composer > button,
+  .community-composer > label,
+  .community-composer > div:not(.community-kind) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .community-view-header > button {
+    position: static;
+    width: 100%;
+    min-height: 3rem;
+    margin-top: 1.25rem;
+  }
+
+  .community-card footer button,
+  .community-card footer a,
+  .community-post footer button {
+    min-height: 2.75rem;
+  }
+
+  .community-post footer {
+    flex-wrap: wrap;
   }
 }
 

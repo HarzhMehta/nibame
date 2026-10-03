@@ -11,4 +11,6 @@ export interface UserItem {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  categoryId?: string;
+  sourceCommunityPostId?: string;
 }

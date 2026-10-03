@@ -48,6 +48,27 @@ async function ensureIndexes(database: Db): Promise<void> {
     database.collection("links").createIndex({ userId: 1, intent: 1, updatedAt: -1 }),
     database.collection("items").createIndex({ userId: 1, status: 1, updatedAt: -1 }),
     database.collection("items").createIndex({ userId: 1, remindAt: 1 }),
+    database.collection("auth_rate_limits").createIndex({ key: 1 }, { unique: true }),
+    database.collection("auth_rate_limits").createIndex(
+      { expiresAt: 1 },
+      { expireAfterSeconds: 0 },
+    ),
+    database.collection("communities").createIndex({ slug: 1 }, { unique: true }),
+    database.collection("communities").createIndex({ status: 1, createdAt: -1 }),
+    database.collection("community_memberships").createIndex(
+      { communityId: 1, userId: 1 },
+      { unique: true },
+    ),
+    database.collection("community_memberships").createIndex({ userId: 1, joinedAt: -1 }),
+    database.collection("community_posts").createIndex({ communityId: 1, createdAt: -1 }),
+    database.collection("community_posts").createIndex({ authorId: 1, createdAt: -1 }),
+    database.collection("items").createIndex(
+      { userId: 1, sourceCommunityPostId: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { sourceCommunityPostId: { $type: "string" } },
+      },
+    ),
   ]);
 }
 

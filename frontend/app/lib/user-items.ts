@@ -16,6 +16,8 @@ interface UserItemDocument {
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date;
+  categoryId?: string;
+  sourceCommunityPostId?: string;
 }
 
 export type UserItemAction = "complete" | "reopen" | "archive";
@@ -40,6 +42,8 @@ function serializeItem(item: UserItemDocument): UserItem {
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
     completedAt: item.completedAt?.toISOString(),
+    categoryId: item.categoryId,
+    sourceCommunityPostId: item.sourceCommunityPostId,
   };
 }
 
@@ -138,4 +142,39 @@ export async function deleteUserItem(userId: ObjectId, id: string): Promise<bool
     .collection<UserItemDocument>("items")
     .deleteOne({ _id: new ObjectId(id), userId });
   return result.deletedCount === 1;
+}
+
+/** Import one community note once into the user's private notes. */
+export async function importCommunityNote(
+  userId: ObjectId,
+  input: {
+    postId: string;
+    text: string;
+    categoryId?: string;
+    timezone: string;
+  },
+): Promise<UserItem> {
+  const database = await getDatabase();
+  const existing = await database.collection<UserItemDocument>("items").findOne({
+    userId,
+    sourceCommunityPostId: input.postId,
+  });
+  if (existing) return serializeItem(existing);
+
+  const now = new Date();
+  const document = {
+    userId,
+    kind: "note" as const,
+    text: input.text.trim().slice(0, 4000),
+    status: "active" as const,
+    timezone: input.timezone.slice(0, 100) || "UTC",
+    categoryId: input.categoryId,
+    sourceCommunityPostId: input.postId,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const result = await database
+    .collection<Omit<UserItemDocument, "_id">>("items")
+    .insertOne(document);
+  return serializeItem({ _id: result.insertedId, ...document });
 }

@@ -40,6 +40,8 @@ interface LinkDocument {
   imageUrl?: string;
   faviconUrl?: string;
   sourceName?: string;
+  userDescription?: string;
+  importedFromCommunityPostIds?: Array<string>;
   metadataStatus?: MetadataStatus;
   metadata?: LinkMetadata;
   openedCount?: number;
@@ -92,6 +94,8 @@ function serializeLink(link: LinkDocument): SavedLink {
     imageUrl: link.imageUrl,
     faviconUrl: link.faviconUrl,
     sourceName: link.sourceName ?? link.domain,
+    userDescription: link.userDescription,
+    importedFromCommunityPostIds: link.importedFromCommunityPostIds,
     metadataStatus: link.metadataStatus ?? "pending",
     metadata: link.metadata ?? { kind: type },
     openedCount: link.openedCount ?? 0,
@@ -315,4 +319,37 @@ export async function updateLinksForDomain(
     },
     { session },
   );
+}
+
+/** Import a community link into one private profile while preserving community context. */
+export async function importCommunityLink(
+  userId: ObjectId,
+  input: {
+    url: string;
+    postId: string;
+    description?: string;
+    category: CategorySummary;
+  },
+): Promise<SavedLink> {
+  const saved = await saveUserLink(userId, input.url);
+  const database = await getDatabase();
+  const objectId = new ObjectId(saved.id);
+  await database.collection<LinkDocument>("links").updateOne(
+    { _id: objectId, userId },
+    {
+      $set: {
+        categoryId: input.category.id,
+        categoryLabel: input.category.label,
+        color: input.category.color,
+        userDescription: input.description?.trim().slice(0, 600) || undefined,
+        updatedAt: new Date(),
+      },
+      $addToSet: { importedFromCommunityPostIds: input.postId },
+    },
+  );
+  const imported = await database
+    .collection<LinkDocument>("links")
+    .findOne({ _id: objectId, userId });
+  if (!imported) throw new LinkError("Could not import this link.", "NOT_FOUND");
+  return serializeLink(imported);
 }

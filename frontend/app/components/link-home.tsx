@@ -295,7 +295,9 @@ export default function LinkHome({ links, onLinkUpdate }: LinkHomeProps): ReactE
                         </small>
                       </div>
                       <h4>{link.title}</h4>
-                      {link.description && <p>{link.description}</p>}
+              {(link.userDescription ?? link.description) && (
+                <p>{link.userDescription ?? link.description}</p>
+              )}
                       {details && <div className="smart-link-details">{details}</div>}
                       <div className="smart-link-category">{link.categoryLabel}</div>
                     </div>

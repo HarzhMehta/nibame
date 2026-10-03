@@ -1,9 +1,8 @@
-import Image from "next/image";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
 
 import CaptureForm from "./components/capture-form";
+import ProductHeader from "./components/product-header";
 import { getCurrentUser } from "./lib/auth";
 import { getUserLinks } from "./lib/user-links";
 import { getUserItems } from "./lib/user-items";
@@ -21,20 +20,7 @@ export default async function Home(): Promise<ReactElement> {
 
   return (
     <main className="product-shell">
-      <header className="product-header">
-        <Link className="product-brand" href="/" aria-label="nibame home">
-          <span className="product-brand-image">
-            <Image src="/logo.png" alt="" width={96} height={96} priority />
-          </span>
-          <strong>nibame</strong>
-        </Link>
-        <div className="product-account">
-          <span>{user.email}</span>
-          <form action="/api/auth/logout" method="post">
-            <button type="submit">Sign out</button>
-          </form>
-        </div>
-      </header>
+      <ProductHeader email={user.email} />
       <CaptureForm
         initialCustomCategories={preferences.customCategories}
         initialCustomDomainRules={preferences.customDomainRules}

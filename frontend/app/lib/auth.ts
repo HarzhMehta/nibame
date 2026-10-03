@@ -18,6 +18,7 @@ interface UserDocument {
   passwordSalt: string;
   createdAt: Date;
   updatedAt: Date;
+  isSuperAdmin?: boolean;
 }
 
 interface SessionDocument {
@@ -31,6 +32,7 @@ interface SessionDocument {
 export interface AuthenticatedUser {
   id: ObjectId;
   email: string;
+  isSuperAdmin: boolean;
 }
 
 export class AuthenticationError extends Error {
@@ -91,7 +93,7 @@ export async function registerUser(email: string, password: string): Promise<Aut
 
   try {
     const result = await database.collection<Omit<UserDocument, "_id">>("users").insertOne(document);
-    return { id: result.insertedId, email: document.email };
+    return { id: result.insertedId, email: document.email, isSuperAdmin: false };
   } catch (error) {
     if (error instanceof MongoServerError && error.code === 11000) {
       throw new AuthenticationError("An account already exists for this email.", "EMAIL_TAKEN");
@@ -113,7 +115,7 @@ export async function authenticateUser(
   if (!user || !(await passwordMatches(password, user.passwordHash, user.passwordSalt))) {
     throw new AuthenticationError("Email or password is incorrect.", "INVALID_CREDENTIALS");
   }
-  return { id: user._id, email: user.email };
+  return { id: user._id, email: user.email, isSuperAdmin: user.isSuperAdmin === true };
 }
 
 /** Create a persistent server-side session and set its secure browser cookie. */
@@ -154,9 +156,11 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
 
   const user = await database.collection<UserDocument>("users").findOne(
     { _id: session.userId },
-    { projection: { email: 1 } },
+    { projection: { email: 1, isSuperAdmin: 1 } },
   );
-  return user ? { id: user._id, email: user.email } : null;
+  return user
+    ? { id: user._id, email: user.email, isSuperAdmin: user.isSuperAdmin === true }
+    : null;
 }
 
 /** Delete the current server-side session and expire its browser cookie. */

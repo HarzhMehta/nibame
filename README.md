@@ -32,15 +32,33 @@ My main wish is to have 4 main parts of this project working which we all can us
 
 ---
 
-## Current foundation: URL organization
+## Current foundation
 
-The first working vertical slice is a deterministic URL categorizer inside the Next.js
-application. It identifies a link's platform family from bundled domain, path, and file
-rules without fetching the page or calling an AI service.
+The working application is a Next.js product backed by MongoDB. Signed-in users can
+capture links, tasks, and notes; deterministic rules classify links without an AI API;
+safe metadata enrichment makes saved links easier to revisit; and every private record,
+category, and learned rule is scoped to its owner.
 
-No database or separate backend is required. Curated rules live in
-`frontend/app/lib/category-rules.json`, and manual corrections remain temporary for the
-current browser session.
+Communities provide shared, categorized spaces for useful links and notes. Any signed-in
+user can discover and join an active community, members can publish and import posts into
+their private library, and only the post author can edit or remove a post. Community
+creation and archival are restricted to users whose MongoDB user document explicitly has
+`isSuperAdmin: true`. The application intentionally exposes no route for granting that
+flag.
+
+Curated URL rules live in `frontend/app/lib/category-rules.json`. Runtime data and
+authentication sessions live in MongoDB; secrets belong only in ignored environment
+files.
+
+To grant the single operator account community-management access, update that exact user
+directly in MongoDB:
+
+```javascript
+db.users.updateOne(
+  { normalizedEmail: "operator@example.com" },
+  { $set: { isSuperAdmin: true } }
+)
+```
 
 ### Run locally
 

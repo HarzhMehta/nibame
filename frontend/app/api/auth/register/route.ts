@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { AuthenticationError, createUserSession, registerUser } from "../../../lib/auth";
+import { clearAuthAttempts, consumeAuthAttempt } from "../../../lib/auth-rate-limit";
 
 interface AuthRequestBody {
   email?: unknown;
@@ -25,10 +26,16 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 400 },
     );
   }
-
   try {
+    if (!(await consumeAuthAttempt("register", request, email))) {
+      return NextResponse.json(
+        { error: { code: "RATE_LIMITED", message: "Too many attempts. Try again later." } },
+        { status: 429 },
+      );
+    }
     const user = await registerUser(email, password);
     await createUserSession(user.id);
+    await clearAuthAttempts("register", request, email);
     return NextResponse.json({ data: { email: user.email } }, { status: 201 });
   } catch (error) {
     if (error instanceof AuthenticationError && error.code === "EMAIL_TAKEN") {

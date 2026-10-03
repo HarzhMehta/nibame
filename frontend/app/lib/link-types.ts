@@ -57,6 +57,8 @@ export interface SavedLink {
   imageUrl?: string;
   faviconUrl?: string;
   sourceName: string;
+  userDescription?: string;
+  importedFromCommunityPostIds?: Array<string>;
   metadataStatus: MetadataStatus;
   metadata: LinkMetadata;
   openedCount: number;
