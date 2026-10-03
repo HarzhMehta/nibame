@@ -72,13 +72,16 @@ async function ensureIndexes(database: Db): Promise<void> {
   ]);
 }
 
-/** Return the application database after its required indexes exist. */
+/** Return the shared database and maintain indexes outside the production request path. */
 export async function getDatabase(): Promise<Db> {
   const client = await getMongoClient();
   const database = client.db(databaseName);
   if (!global.nibameMongoIndexes) {
-    global.nibameMongoIndexes = ensureIndexes(database);
+    global.nibameMongoIndexes = ensureIndexes(database).catch((error: unknown) => {
+      global.nibameMongoIndexes = undefined;
+      console.error("MongoDB index maintenance failed.", error);
+    });
   }
-  await global.nibameMongoIndexes;
+  if (process.env.NODE_ENV !== "production") await global.nibameMongoIndexes;
   return database;
 }

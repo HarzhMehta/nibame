@@ -29,6 +29,10 @@ interface SessionDocument {
   createdAt: Date;
 }
 
+interface SessionUserDocument {
+  user: Pick<UserDocument, "_id" | "email" | "isSuperAdmin">;
+}
+
 export interface AuthenticatedUser {
   id: ObjectId;
   email: string;
@@ -148,16 +152,36 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
   if (!token) return null;
 
   const database = await getDatabase();
-  const session = await database.collection<SessionDocument>("sessions").findOne({
-    tokenHash: hashSessionToken(token),
-    expiresAt: { $gt: new Date() },
-  });
-  if (!session) return null;
-
-  const user = await database.collection<UserDocument>("users").findOne(
-    { _id: session.userId },
-    { projection: { email: 1, isSuperAdmin: 1 } },
-  );
+  const session = await database
+    .collection<SessionDocument>("sessions")
+    .aggregate<SessionUserDocument>([
+      {
+        $match: {
+          tokenHash: hashSessionToken(token),
+          expiresAt: { $gt: new Date() },
+        },
+      },
+      { $limit: 1 },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $project: {
+          _id: 0,
+          "user._id": 1,
+          "user.email": 1,
+          "user.isSuperAdmin": 1,
+        },
+      },
+    ])
+    .next();
+  const user = session?.user;
   return user
     ? { id: user._id, email: user.email, isSuperAdmin: user.isSuperAdmin === true }
     : null;

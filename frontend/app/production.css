@@ -221,7 +221,7 @@ textarea:disabled {
 
 .product-nav a {
   display: grid;
-  grid-template-columns: 2.1rem 1fr;
+  grid-template-columns: 2.1rem 1fr auto;
   align-items: center;
   min-height: 3.3rem;
   padding: 0.5rem 0.65rem;
@@ -232,6 +232,15 @@ textarea:disabled {
     background 160ms ease,
     color 160ms ease,
     transform 160ms ease;
+}
+
+.product-nav-pending {
+  width: 0.45rem;
+  height: 0.45rem;
+  border: 1px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: nav-spin 600ms linear infinite;
 }
 
 .product-nav a span {
@@ -2495,6 +2504,10 @@ textarea:disabled {
   }
 }
 
+@keyframes nav-spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 1100px) {
   :root { --rail: 13rem; }
 
@@ -2551,7 +2564,7 @@ textarea:disabled {
   }
 
   .product-nav a {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto;
     justify-content: center;
     min-height: 3.2rem;
     text-align: center;

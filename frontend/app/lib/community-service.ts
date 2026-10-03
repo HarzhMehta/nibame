@@ -182,28 +182,28 @@ export async function listCommunities(user: AuthenticatedUser): Promise<Array<Co
     .limit(100)
     .toArray();
   const ids = communities.map((community) => community._id);
-  const memberships = await database
-    .collection<MembershipDocument>("community_memberships")
-    .find({ userId: user.id, communityId: { $in: ids } })
-    .toArray();
-  const memberGroups = ids.length
-    ? await database
+  if (!ids.length) return [];
+
+  const [memberships, memberGroups, postGroups] = await Promise.all([
+    database
+      .collection<MembershipDocument>("community_memberships")
+      .find({ userId: user.id, communityId: { $in: ids } })
+      .toArray(),
+    database
         .collection<MembershipDocument>("community_memberships")
         .aggregate<{ _id: ObjectId; count: number }>([
           { $match: { communityId: { $in: ids } } },
           { $group: { _id: "$communityId", count: { $sum: 1 } } },
         ])
-        .toArray()
-    : [];
-  const postGroups = ids.length
-    ? await database
+        .toArray(),
+    database
         .collection<CommunityPostDocument>("community_posts")
         .aggregate<{ _id: ObjectId; count: number }>([
           { $match: { communityId: { $in: ids } } },
           { $group: { _id: "$communityId", count: { $sum: 1 } } },
         ])
-        .toArray()
-    : [];
+        .toArray(),
+  ]);
   const membershipIds = new Set(memberships.map((entry) => entry.communityId.toHexString()));
   const memberCounts = new Map(memberGroups.map((entry) => [entry._id.toHexString(), entry.count]));
   const postCounts = new Map(postGroups.map((entry) => [entry._id.toHexString(), entry.count]));
