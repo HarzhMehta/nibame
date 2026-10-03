@@ -10,6 +10,7 @@ import { getBuiltInCategories } from "../lib/url-categorizer";
 
 interface CommunityDirectoryProps {
   initialCommunities: Array<CommunitySummary>;
+  isAuthenticated: boolean;
   isSuperAdmin: boolean;
 }
 
@@ -21,6 +22,7 @@ interface CommunityResponse {
 /** Render finite community discovery and super-admin creation. */
 export default function CommunityDirectory({
   initialCommunities,
+  isAuthenticated,
   isSuperAdmin,
 }: CommunityDirectoryProps): ReactElement {
   const [communities, setCommunities] = useState(initialCommunities);
@@ -196,9 +198,10 @@ export default function CommunityDirectory({
                 <span>{community.postCount} posts</span>
               </div>
               <footer>
-                {community.isJoined ? (
-                  <Link href={"/communities/" + community.slug}>Open</Link>
-                ) : (
+                <Link href={"/communities/" + community.slug}>
+                  {community.isJoined ? "Open" : "View"}
+                </Link>
+                {isAuthenticated && !community.isJoined && (
                   <button
                     type="button"
                     disabled={busyId === community.id || community.status === "archived"}

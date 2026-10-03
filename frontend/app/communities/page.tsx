@@ -1,23 +1,23 @@
-import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
 
 import ProductHeader from "../components/product-header";
+import PublicHeader from "../components/public-header";
 import { getCurrentUser } from "../lib/auth";
 import { listCommunities } from "../lib/community-service";
 import CommunityDirectory from "./community-directory";
 
-/** Render authenticated community discovery and administration. */
+/** Render public community discovery with authenticated actions when available. */
 export default async function CommunitiesPage(): Promise<ReactElement> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
   const communities = await listCommunities(user);
   return (
-    <main className="product-shell">
-      <ProductHeader email={user.email} />
-      <div className="product-content">
+    <main className={user ? "product-shell" : "public-shell"}>
+      {user ? <ProductHeader email={user.email} /> : <PublicHeader />}
+      <div className={user ? "product-content" : "public-content"}>
         <CommunityDirectory
           initialCommunities={communities}
-          isSuperAdmin={user.isSuperAdmin}
+          isAuthenticated={Boolean(user)}
+          isSuperAdmin={user?.isSuperAdmin === true}
         />
       </div>
     </main>

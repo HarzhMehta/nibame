@@ -6,13 +6,22 @@ import { getCurrentUser } from "../lib/auth";
 import LoginForm from "./login-form";
 
 interface LoginPageProps {
-  searchParams: Promise<{ shared?: string | Array<string> }>;
+  searchParams: Promise<{
+    shared?: string | Array<string>;
+    next?: string | Array<string>;
+  }>;
 }
 
 /** Render the account entry screen for signed-out users. */
 export default async function LoginPage({ searchParams }: LoginPageProps): Promise<ReactElement> {
-  if (await getCurrentUser()) redirect("/");
-  const sharedValue = (await searchParams).shared;
+  const parameters = await searchParams;
+  const requestedNext = typeof parameters.next === "string" ? parameters.next : "";
+  const nextPath =
+    requestedNext.startsWith("/") && !requestedNext.startsWith("//")
+      ? requestedNext.slice(0, 512)
+      : "/home";
+  if (await getCurrentUser()) redirect(nextPath);
+  const sharedValue = parameters.shared;
   const sharedUrl = typeof sharedValue === "string" ? sharedValue.slice(0, 2048) : undefined;
 
   return (
@@ -31,7 +40,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps): Promi
           <i>LINKS</i><i>TASKS</i><i>NOTES</i><i>PLACES</i>
         </div>
       </section>
-      <LoginForm sharedUrl={sharedUrl} />
+      <LoginForm sharedUrl={sharedUrl} nextPath={nextPath} />
     </main>
   );
 }

@@ -13,6 +13,7 @@ import type {
 import { getBuiltInCategories } from "../../lib/url-categorizer";
 
 interface CommunityViewProps {
+  isAuthenticated: boolean;
   initialCommunity: CommunitySummary;
   initialPosts: Array<CommunityPost>;
   initialNextCursor?: string;
@@ -28,8 +29,9 @@ interface PostPageResponse {
   error?: { message?: string };
 }
 
-/** Render one joined community with finite categorized posts and private imports. */
+/** Render a public community with authenticated contribution controls. */
 export default function CommunityView({
+  isAuthenticated,
   initialCommunity,
   initialPosts,
   initialNextCursor,
@@ -68,7 +70,7 @@ export default function CommunityView({
   );
 
   useEffect(() => {
-    if (!community.isJoined || !hasPending) return;
+    if (!hasPending) return;
     const timer = window.setInterval(() => {
       void fetch("/api/communities/" + community.id + "/posts")
         .then((response) => response.json())
@@ -83,7 +85,7 @@ export default function CommunityView({
         .catch(() => undefined);
     }, 2500);
     return () => window.clearInterval(timer);
-  }, [community.id, community.isJoined, hasPending]);
+  }, [community.id, hasPending]);
 
   const visiblePosts = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
@@ -134,13 +136,14 @@ export default function CommunityView({
         isJoined: false,
         memberCount: Math.max(0, current.memberCount - 1),
       }));
-      setPosts([]);
     } catch (leaveError) {
       setError(leaveError instanceof Error ? leaveError.message : "Could not leave.");
     } finally {
       setBusyId(null);
     }
   };
+
+  const loginHref = "/login?next=" + encodeURIComponent("/communities/" + community.slug);
 
   const createPost = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
@@ -279,10 +282,12 @@ export default function CommunityView({
           <button type="button" onClick={() => void leave()} disabled={busyId === community.id}>
             Leave
           </button>
-        ) : (
+        ) : isAuthenticated ? (
           <button type="button" onClick={() => void join()} disabled={busyId === community.id}>
             {busyId === community.id ? "Joining" : "Join community"}
           </button>
+        ) : (
+          <Link className="community-auth-link" href={loginHref}>Sign in to join</Link>
         )}
       </header>
 
@@ -291,8 +296,7 @@ export default function CommunityView({
         {!error && success && <p className="is-success" role="status">{success}</p>}
       </div>
 
-      {community.isJoined ? (
-        <>
+      {community.isJoined && (
           <form className="community-composer" onSubmit={createPost}>
             <div className="community-kind" role="group" aria-label="Post type">
               <button
@@ -347,8 +351,9 @@ export default function CommunityView({
               {isPosting ? "Sharing" : postKind === "link" ? "Share link" : "Share note"}
             </button>
           </form>
+      )}
 
-          <div className="community-post-toolbar">
+      <div className="community-post-toolbar">
             <input
               type="search"
               value={query}
@@ -364,10 +369,10 @@ export default function CommunityView({
               onChange={setFilterCategory}
               searchable
             />
-          </div>
+      </div>
 
-          {visiblePosts.length ? (
-            <div className="community-post-grid">
+      {visiblePosts.length ? (
+        <div className="community-post-grid">
               {visiblePosts.map((post) => (
                 <article
                   className={"community-post is-" + post.kind}
@@ -422,13 +427,21 @@ export default function CommunityView({
                     )}
                   </div>
                   <footer>
-                    <button
-                      type="button"
-                      disabled={busyId === post.id || importedIds.includes(post.id)}
-                      onClick={() => void importPost(post)}
-                    >
-                      {importedIds.includes(post.id) ? "Added" : "Add to mine"}
-                    </button>
+                    {community.isJoined ? (
+                      <button
+                        type="button"
+                        disabled={busyId === post.id || importedIds.includes(post.id)}
+                        onClick={() => void importPost(post)}
+                      >
+                        {importedIds.includes(post.id) ? "Added" : "Add to mine"}
+                      </button>
+                    ) : isAuthenticated ? (
+                      <button type="button" onClick={() => void join()}>
+                        Join to save
+                      </button>
+                    ) : (
+                      <Link href={loginHref}>Sign in to save</Link>
+                    )}
                     {post.isOwn && (
                       <>
                         <button
@@ -454,28 +467,19 @@ export default function CommunityView({
                   </footer>
                 </article>
               ))}
-            </div>
-          ) : (
-            <p className="community-empty">Nothing here yet.</p>
-          )}
-          {nextCursor && (
-            <button
-              className="community-load-more"
-              type="button"
-              onClick={() => void loadMore()}
-              disabled={busyId === "load-more"}
-            >
-              {busyId === "load-more" ? "Loading" : "Load more"}
-            </button>
-          )}
-        </>
-      ) : (
-        <div className="community-join-gate">
-          <p>Join to read and contribute.</p>
-          <button type="button" onClick={() => void join()}>
-            Join community
-          </button>
         </div>
+      ) : (
+        <p className="community-empty">Nothing here yet.</p>
+      )}
+      {nextCursor && (
+        <button
+          className="community-load-more"
+          type="button"
+          onClick={() => void loadMore()}
+          disabled={busyId === "load-more"}
+        >
+          {busyId === "load-more" ? "Loading" : "Load more"}
+        </button>
       )}
     </section>
   );

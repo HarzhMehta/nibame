@@ -17,7 +17,6 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        registerPlugin(SpeechInputPlugin.class);
         super.onCreate(savedInstanceState);
         getBridge().getWebView().setBackgroundColor(Color.rgb(23, 26, 26));
         handleShareIntent(getIntent());

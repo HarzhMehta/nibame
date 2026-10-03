@@ -1,18 +1,16 @@
-import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
 
 import ProductHeader from "../components/product-header";
+import PublicHeader from "../components/public-header";
 import { getCurrentUser } from "../lib/auth";
 
 /** Explain the product and its core workflows. */
 export default async function AboutPage(): Promise<ReactElement> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
-
   return (
-    <main className="product-shell">
-      <ProductHeader email={user.email} />
-      <div className="product-content">
+    <main className={user ? "product-shell" : "public-shell"}>
+      {user ? <ProductHeader email={user.email} /> : <PublicHeader />}
+      <div className={user ? "product-content" : "public-content"}>
         <section className="about-page" aria-labelledby="about-title">
           <header className="about-hero">
             <span>About / 03</span>

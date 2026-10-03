@@ -31,7 +31,7 @@ export default function MobileShareReceiver({
         }
         if (!response.ok) throw new Error("Could not save this link.");
         if (isActive) {
-          router.replace("/");
+          router.replace("/home");
           router.refresh();
         }
       } catch {

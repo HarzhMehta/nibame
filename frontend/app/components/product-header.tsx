@@ -16,7 +16,7 @@ interface NavContentProps {
   label: string;
 }
 
-const PRODUCT_ROUTES = ["/", "/communities", "/about"] as const;
+const PRODUCT_ROUTES = ["/home", "/communities", "/about"] as const;
 
 function NavContent({ index, label }: NavContentProps): ReactElement {
   const { pending } = useLinkStatus();
@@ -51,7 +51,7 @@ export default function ProductHeader({ email }: ProductHeaderProps): ReactEleme
     try {
       const response = await fetch("/api/auth/logout", { method: "POST" });
       if (!response.ok) throw new Error("Sign out failed");
-      router.replace("/login");
+      router.replace("/");
       router.refresh();
     } catch {
       form.submit();
@@ -60,7 +60,7 @@ export default function ProductHeader({ email }: ProductHeaderProps): ReactEleme
 
   return (
     <header className="product-header">
-      <Link className="product-brand" href="/" aria-label="nibame home">
+      <Link className="product-brand" href="/home" aria-label="nibame home">
         <span className="product-brand-symbol" aria-hidden="true">n</span>
         <span className="product-brand-copy">
           <strong>nibame</strong>
@@ -68,7 +68,7 @@ export default function ProductHeader({ email }: ProductHeaderProps): ReactEleme
         </span>
       </Link>
       <nav className="product-nav" aria-label="Primary navigation">
-        <Link href="/" prefetch aria-current={pathname === "/" ? "page" : undefined}>
+        <Link href="/home" prefetch aria-current={pathname === "/home" ? "page" : undefined}>
           <NavContent index="01" label="Home" />
         </Link>
         <Link

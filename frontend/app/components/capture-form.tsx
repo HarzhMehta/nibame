@@ -22,7 +22,6 @@ import {
 import CustomSelect, { type CustomSelectOption } from "./custom-select";
 import ItemDashboard from "./item-dashboard";
 import LinkHome from "./link-home";
-import VoiceCaptureButton from "./voice-capture-button";
 
 interface CaptureFormProps {
   initialCustomCategories: Array<CustomCategory>;
@@ -688,10 +687,6 @@ export default function CaptureForm({
               autoFocus
             />
             <div className="capture-input-actions">
-              <VoiceCaptureButton
-                disabled={isSavingLink || isSavingItem}
-                onTranscript={(text) => setUrl((current) => current ? current + " " + text : text)}
-              />
               <button type="submit" disabled={isSavingLink || isSavingItem}>
                 {isSavingLink || isSavingItem
                   ? "Saving"

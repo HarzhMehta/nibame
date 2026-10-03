@@ -15,6 +15,7 @@ interface AuthResponse {
 
 interface LoginFormProps {
   sharedUrl?: string;
+  nextPath: string;
 }
 
 type AuthStatusTone = "idle" | "progress" | "success" | "error";
@@ -25,7 +26,7 @@ interface AuthStatus {
 }
 
 /** Render the compact sign-in and registration form. */
-export default function LoginForm({ sharedUrl }: LoginFormProps): ReactElement {
+export default function LoginForm({ sharedUrl, nextPath }: LoginFormProps): ReactElement {
   const router = useRouter();
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmationRef = useRef<HTMLInputElement>(null);
@@ -83,7 +84,7 @@ export default function LoginForm({ sharedUrl }: LoginFormProps): ReactElement {
           body: JSON.stringify({ url: sharedUrl }),
         });
       }
-      router.replace("/");
+      router.replace(nextPath);
       router.refresh();
     } catch (submissionError) {
       const message =

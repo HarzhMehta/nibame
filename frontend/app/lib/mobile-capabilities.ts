@@ -1,15 +1,9 @@
 "use client";
 
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 
 import type { UserItem } from "./item-types";
-
-interface SpeechInputPlugin {
-  start(): Promise<{ text: string }>;
-}
-
-const SpeechInput = registerPlugin<SpeechInputPlugin>("SpeechInput");
 
 function notificationId(itemId: string): number {
   let hash = 0;
@@ -17,17 +11,6 @@ function notificationId(itemId: string): number {
     hash = (hash * 31 + character.charCodeAt(0)) | 0;
   }
   return Math.abs(hash) || 1;
-}
-
-/** Return whether the app is running inside the native Android shell. */
-export function hasNativeSpeechInput(): boolean {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
-}
-
-/** Start Android's system speech recognizer. */
-export async function startNativeSpeechInput(): Promise<string> {
-  const result = await SpeechInput.start();
-  return result.text.trim();
 }
 
 /** Schedule a free local Android notification for an item reminder. */

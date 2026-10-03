@@ -97,7 +97,7 @@ function authorAlias(userId: ObjectId): string {
   return "Member " + userId.toHexString().slice(-4).toLocaleUpperCase();
 }
 
-function serializePost(post: CommunityPostDocument, userId: ObjectId): CommunityPost {
+function serializePost(post: CommunityPostDocument, userId?: ObjectId | null): CommunityPost {
   return {
     id: post._id.toHexString(),
     communityId: post.communityId.toHexString(),
@@ -115,7 +115,7 @@ function serializePost(post: CommunityPostDocument, userId: ObjectId): Community
     metadataStatus: post.metadataStatus,
     metadata: post.metadata,
     authorAlias: post.authorAlias,
-    isOwn: post.authorId.equals(userId),
+    isOwn: Boolean(userId && post.authorId.equals(userId)),
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString(),
   };
@@ -148,7 +148,7 @@ async function requireMembership(userId: ObjectId, communityId: ObjectId): Promi
 
 async function summaryFor(
   community: CommunityDocument,
-  user: AuthenticatedUser,
+  user: AuthenticatedUser | null,
   membershipIds: Set<string>,
   memberCounts: Map<string, number>,
   postCounts: Map<string, number>,
@@ -167,17 +167,19 @@ async function summaryFor(
     memberCount: memberCounts.get(id) ?? 0,
     postCount: postCounts.get(id) ?? 0,
     isJoined: membershipIds.has(id),
-    isSuperAdmin: user.isSuperAdmin,
+    isSuperAdmin: user?.isSuperAdmin === true,
     createdAt: community.createdAt.toISOString(),
   };
 }
 
 /** List discoverable communities with membership and finite count summaries. */
-export async function listCommunities(user: AuthenticatedUser): Promise<Array<CommunitySummary>> {
+export async function listCommunities(
+  user: AuthenticatedUser | null = null,
+): Promise<Array<CommunitySummary>> {
   const database = await getDatabase();
   const communities = await database
     .collection<CommunityDocument>("communities")
-    .find(user.isSuperAdmin ? {} : { status: "active" })
+    .find(user?.isSuperAdmin ? {} : { status: "active" })
     .sort({ createdAt: -1 })
     .limit(100)
     .toArray();
@@ -185,10 +187,12 @@ export async function listCommunities(user: AuthenticatedUser): Promise<Array<Co
   if (!ids.length) return [];
 
   const [memberships, memberGroups, postGroups] = await Promise.all([
-    database
-      .collection<MembershipDocument>("community_memberships")
-      .find({ userId: user.id, communityId: { $in: ids } })
-      .toArray(),
+    user
+      ? database
+          .collection<MembershipDocument>("community_memberships")
+          .find({ userId: user.id, communityId: { $in: ids } })
+          .toArray()
+      : Promise.resolve([]),
     database
         .collection<MembershipDocument>("community_memberships")
         .aggregate<{ _id: ObjectId; count: number }>([
@@ -216,17 +220,17 @@ export async function listCommunities(user: AuthenticatedUser): Promise<Array<Co
 
 /** Load one community by slug without exposing private account identifiers. */
 export async function getCommunityBySlug(
-  user: AuthenticatedUser,
+  user: AuthenticatedUser | null,
   slug: string,
 ): Promise<CommunitySummary> {
   const database = await getDatabase();
   const community = await database.collection<CommunityDocument>("communities").findOne({
     slug,
-    ...(user.isSuperAdmin ? {} : { status: "active" }),
+    ...(user?.isSuperAdmin ? {} : { status: "active" }),
   });
   if (!community) throw new CommunityError("Community not found.", "NOT_FOUND");
   const [isJoined, memberCount, postCount] = await Promise.all([
-    membershipExists(user.id, community._id),
+    user ? membershipExists(user.id, community._id) : Promise.resolve(false),
     database.collection<MembershipDocument>("community_memberships").countDocuments({
       communityId: community._id,
     }),
@@ -348,15 +352,15 @@ export async function leaveCommunity(userId: ObjectId, communityId: string): Pro
   });
 }
 
-/** Return one finite page of posts for a joined member. */
+/** Return one finite public page of posts from an active community. */
 export async function listCommunityPosts(
-  userId: ObjectId,
+  userId: ObjectId | null,
   communityId: string,
   before?: string,
 ): Promise<{ posts: Array<CommunityPost>; nextCursor?: string }> {
   if (!ObjectId.isValid(communityId)) throw new CommunityError("Community not found.", "NOT_FOUND");
   const objectId = new ObjectId(communityId);
-  await requireMembership(userId, objectId);
+  await activeCommunity(objectId);
   const database = await getDatabase();
   const beforeDate = before ? new Date(before) : undefined;
   const posts = await database

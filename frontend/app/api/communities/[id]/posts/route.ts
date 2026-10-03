@@ -20,22 +20,16 @@ interface CreatePostBody {
   categoryId?: unknown;
 }
 
-/** Return one finite page of posts for a joined member. */
+/** Return one finite public page of community posts. */
 export async function GET(
   request: Request,
   context: RouteContext,
 ): Promise<NextResponse> {
   const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "Sign in to continue." } },
-      { status: 401 },
-    );
-  }
   try {
     const { id } = await context.params;
     const before = new URL(request.url).searchParams.get("before") ?? undefined;
-    const page = await listCommunityPosts(user.id, id, before);
+    const page = await listCommunityPosts(user?.id ?? null, id, before);
     for (const post of page.posts
       .filter((candidate) =>
         candidate.metadataStatus === "pending" || candidate.metadataStatus === "processing",
@@ -48,7 +42,7 @@ export async function GET(
     if (error instanceof CommunityError) {
       return NextResponse.json(
         { error: { code: error.code, message: error.message } },
-        { status: error.code === "NOT_JOINED" ? 403 : 404 },
+        { status: 404 },
       );
     }
     return NextResponse.json(

@@ -13,15 +13,9 @@ interface CreateCommunityBody {
   categoryId?: unknown;
 }
 
-/** List discoverable communities for an authenticated account. */
+/** List active communities publicly and include membership state when signed in. */
 export async function GET(): Promise<NextResponse> {
   const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "Sign in to continue." } },
-      { status: 401 },
-    );
-  }
   return NextResponse.json({ data: { communities: await listCommunities(user) } });
 }
 

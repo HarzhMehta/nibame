@@ -12,7 +12,52 @@
         margin: 0;
         background: #171a1a;
       }
+
+      body {
+        display: grid;
+        place-items: center;
+      }
+
+      .boot-loader {
+        position: relative;
+        display: grid;
+        width: 64px;
+        height: 64px;
+        place-items: center;
+        border: 1px solid #fffdf7;
+        background: #ffc857;
+        color: #171a1a;
+        font: 700 32px sans-serif;
+        box-shadow: 7px 7px 0 #3d38e8;
+        animation: boot-mark 900ms ease-in-out infinite alternate;
+      }
+
+      .boot-loader::after {
+        position: absolute;
+        inset: -22px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-top-color: #fffdf7;
+        border-radius: 50%;
+        content: "";
+        animation: boot-spin 900ms linear infinite;
+      }
+
+      @keyframes boot-mark {
+        from { transform: rotate(-6deg) scale(0.96); }
+        to { transform: rotate(3deg) scale(1); }
+      }
+
+      @keyframes boot-spin {
+        to { transform: rotate(360deg); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .boot-loader,
+        .boot-loader::after { animation: none; }
+      }
     </style>
   </head>
-  <body></body>
+  <body>
+    <div class="boot-loader" role="status" aria-label="Loading">n</div>
+  </body>
 </html>

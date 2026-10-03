@@ -1,7 +1,8 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { ReactElement } from "react";
 
 import ProductHeader from "../../components/product-header";
+import PublicHeader from "../../components/public-header";
 import { getCurrentUser } from "../../lib/auth";
 import {
   CommunityError,
@@ -14,31 +15,29 @@ interface CommunityPageProps {
   params: Promise<{ slug: string }>;
 }
 
-/** Render one authenticated community and its member-only feed. */
+/** Render one public community with authenticated contribution controls. */
 export default async function CommunityPage({
   params,
 }: CommunityPageProps): Promise<ReactElement> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
 
   let community;
   let page;
   try {
     const { slug } = await params;
     community = await getCommunityBySlug(user, slug);
-    page = community.isJoined
-      ? await listCommunityPosts(user.id, community.id)
-      : { posts: [], nextCursor: undefined };
+    page = await listCommunityPosts(user?.id ?? null, community.id);
   } catch (error) {
     if (error instanceof CommunityError && error.code === "NOT_FOUND") notFound();
     throw error;
   }
 
   return (
-    <main className="product-shell">
-      <ProductHeader email={user.email} />
-      <div className="product-content">
+    <main className={user ? "product-shell" : "public-shell"}>
+      {user ? <ProductHeader email={user.email} /> : <PublicHeader />}
+      <div className={user ? "product-content" : "public-content"}>
         <CommunityView
+          isAuthenticated={Boolean(user)}
           initialCommunity={community}
           initialPosts={page.posts}
           initialNextCursor={page.nextCursor}
