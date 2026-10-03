@@ -13,9 +13,12 @@ export default async function AboutPage(): Promise<ReactElement> {
       <div className={user ? "product-content" : "public-content"}>
         <section className="about-page" aria-labelledby="about-title">
           <header className="about-hero">
-            <span>About / 03</span>
-            <h1 id="about-title">Capture. Sort. Return.</h1>
-            <p>Nibame keeps links, tasks and notes in one account.</p>
+            <span>Current foundation / URL classification</span>
+            <h1 id="about-title">Links, organized automatically.</h1>
+            <p>
+              Paste a URL. Nibame identifies the source, assigns a category and stores it in
+              your Library. Change the result or create your own category with one sample link.
+            </p>
           </header>
 
           <section className="about-section" aria-labelledby="about-use-title">
@@ -27,29 +30,29 @@ export default async function AboutPage(): Promise<ReactElement> {
               <li>
                 <span>01</span>
                 <div>
-                  <h3>Personal</h3>
-                  <p>Choose Link, Task or Note. Enter it and select Add.</p>
+                  <h3>Paste a link</h3>
+                  <p>Enter any HTTP link or bare domain.</p>
                 </div>
               </li>
               <li>
                 <span>02</span>
                 <div>
-                  <h3>Communities</h3>
-                  <p>Join a space. Share a link or note. Use Add to mine to save a copy.</p>
+                  <h3>Review</h3>
+                  <p>Nibame assigns a category using deterministic domain and path rules.</p>
                 </div>
               </li>
               <li>
                 <span>03</span>
                 <div>
-                  <h3>Categories</h3>
-                  <p>Open Link categories on Home. Select Add category and provide a sample link.</p>
+                  <h3>Customize</h3>
+                  <p>Choose another category or create one with a sample link.</p>
                 </div>
               </li>
               <li>
                 <span>04</span>
                 <div>
                   <h3>Return</h3>
-                  <p>Use Home to revisit items. Use Library to search and filter links.</p>
+                  <p>Use Library to search, filter and open saved links.</p>
                 </div>
               </li>
             </ol>
@@ -66,12 +69,12 @@ export default async function AboutPage(): Promise<ReactElement> {
                 saved posts, direct messages and notes.
               </p>
               <p>
-                Link categories use deterministic domain rules. A sample link can add or
-                replace a rule for your account.
+                URL classification uses deterministic domain and path rules. It does not
+                require an LLM.
               </p>
               <p>
-                Personal entries stay in your account. Community posts are shared with
-                members of that community.
+                The current focus is fast link capture, reliable classification and
+                user-defined rules. Tasks, notes and communities extend the same index.
               </p>
             </div>
           </section>

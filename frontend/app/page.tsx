@@ -11,30 +11,35 @@ export default function LandingPage(): ReactElement {
       <div className="public-content">
         <section className="landing-hero" aria-labelledby="landing-title">
           <div className="landing-hero-copy">
-            <span>Links / Tasks / Notes</span>
-            <h1 id="landing-title">Save it. Find it later.</h1>
-            <p>One account for personal captures and shared communities.</p>
+            <span>Links / Tasks / Reminders / Notes</span>
+            <h1 id="landing-title">Paste links. Add tasks. Set reminders.</h1>
+            <p>
+              Nibame categorizes URLs automatically and keeps tasks, reminders and notes in
+              the same workspace. Create your own categories when needed.
+            </p>
             <div className="landing-actions">
               <Link href="/home">Open app</Link>
               <Link href="/communities">Browse communities</Link>
             </div>
           </div>
           <div className="landing-index" aria-hidden="true">
-            <div><span>01</span><strong>LINK</strong><small>github.com</small></div>
-            <div><span>02</span><strong>TASK</strong><small>Friday, 10:00</small></div>
-            <div><span>03</span><strong>NOTE</strong><small>Distributed systems</small></div>
+            <div><span>01</span><strong>LINK</strong><small>github.com/HarzhMehta/nibame</small></div>
+            <div><span>02</span><strong>DEVELOPMENT &amp; CODE</strong><small>Automatic or your own category</small></div>
+            <div><span>03</span><strong>TASK</strong><small>Review saved resources</small></div>
+            <div><span>04</span><strong>REMINDER</strong><small>Friday, 10:00</small></div>
           </div>
         </section>
 
         <section className="landing-section" aria-labelledby="landing-how-title">
           <header>
-            <span>How it works</span>
-            <h2 id="landing-how-title">Three steps</h2>
+            <span>What it handles</span>
+            <h2 id="landing-how-title">One capture space</h2>
           </header>
           <ol className="landing-steps">
-            <li><span>01</span><h3>Add</h3><p>Choose Link, Task or Note.</p></li>
-            <li><span>02</span><h3>Organize</h3><p>Links are categorized by source.</p></li>
-            <li><span>03</span><h3>Return</h3><p>Search, filter or use Home.</p></li>
+            <li><span>01</span><h3>Links</h3><p>Paste a URL and receive a category.</p></li>
+            <li><span>02</span><h3>Categories</h3><p>Keep the result or create your own rule.</p></li>
+            <li><span>03</span><h3>Tasks &amp; Notes</h3><p>Capture a one-line action or thought.</p></li>
+            <li><span>04</span><h3>Reminders</h3><p>Add a date and time to a task or note.</p></li>
           </ol>
         </section>
 
@@ -42,7 +47,7 @@ export default function LandingPage(): ReactElement {
           <article>
             <span>Personal</span>
             <h2>Your private workspace</h2>
-            <p>Save links, tasks and notes. Add category rules with a sample link.</p>
+            <p>Save categorized links, tasks and notes. Add category rules with a sample link.</p>
             <Link href="/login?next=/home">Sign in</Link>
           </article>
           <article>

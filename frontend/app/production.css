@@ -380,7 +380,7 @@ textarea:disabled {
   position: relative;
   display: grid;
   min-height: 22rem;
-  grid-template-columns: minmax(14rem, 0.7fr) minmax(18rem, 1.3fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
   align-content: end;
   align-items: end;
   gap: 1.5rem 3rem;
@@ -420,7 +420,8 @@ textarea:disabled {
   position: relative;
   z-index: 1;
   margin: 0;
-  font-size: clamp(3rem, 6vw, 5.8rem);
+  max-width: 11ch;
+  font-size: clamp(2.8rem, 4.5vw, 4.8rem);
   letter-spacing: -0.075em;
   line-height: 0.9;
 }
@@ -772,7 +773,7 @@ textarea:disabled {
 
 .landing-index > div {
   display: grid;
-  min-height: 6.3rem;
+  min-height: 5.25rem;
   grid-template-columns: 2.5rem minmax(0, 1fr);
   align-content: center;
   gap: 0.35rem 0.8rem;
@@ -785,6 +786,7 @@ textarea:disabled {
 .landing-index > div:nth-child(1) { background: var(--lime); transform: rotate(-1.5deg); }
 .landing-index > div:nth-child(2) { background: var(--paper-bright); transform: translateX(0.7rem); }
 .landing-index > div:nth-child(3) { background: var(--sky); transform: rotate(1deg); }
+.landing-index > div:nth-child(4) { background: color-mix(in srgb, var(--coral) 22%, var(--paper-bright)); }
 
 .landing-index span {
   grid-row: 1 / span 2;
@@ -830,7 +832,7 @@ textarea:disabled {
 
 .landing-steps {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   margin: 0;
   padding: 0;
   border-left: 1px solid var(--ink);
@@ -3059,6 +3061,8 @@ textarea:disabled {
   .landing-hero {
     grid-template-columns: 1fr;
   }
+
+  .landing-steps { grid-template-columns: repeat(2, 1fr); }
 
   .landing-index {
     grid-template-columns: repeat(3, 1fr);
